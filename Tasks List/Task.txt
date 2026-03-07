@@ -1,0 +1,3 @@
+1) Proper Reordering the Folder structure
+2) recreating the SRS based on current code features and to be implementable features
+3) delete not required files and eslint setup 

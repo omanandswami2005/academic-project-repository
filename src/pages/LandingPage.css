@@ -1,0 +1,300 @@
+.landing-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 2rem;
+}
+
+.background-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(135deg, rgba(65, 105, 225, 0.1) 0%, transparent 50%),
+    linear-gradient(45deg, rgba(107, 140, 232, 0.08) 0%, transparent 50%);
+  background-size: 120px 120px;
+  opacity: 0.6;
+  z-index: 0;
+}
+
+.landing-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1200px;
+  text-align: center;
+}
+
+.landing-header {
+  margin-bottom: 3rem;
+}
+
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.logo-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
+.landing-title {
+  font-size: 4.5rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  letter-spacing: 3px;
+  padding: 0.4rem 2.5rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.08));
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(6px);
+  animation: glowPulse 6s ease-in-out infinite;
+}
+
+.landing-tagline {
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 500;
+  letter-spacing: 2px;
+  margin-top: 1rem;
+  text-transform: uppercase;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+}
+
+.illustration-container {
+  margin: 4rem 0;
+}
+
+.illustration {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+}
+
+.illustration-item {
+  width: 120px;
+  height: 120px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: float 3s ease-in-out infinite;
+}
+
+.illustration-item:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.illustration-item:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.illustration-item:nth-child(3) {
+  animation-delay: 1s;
+}
+
+.illustration-item:hover {
+  transform: translateY(-10px) scale(1.1);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+.auth-buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin: 4rem 0;
+  flex-wrap: wrap;
+}
+
+.auth-button {
+  min-width: 220px;
+  padding: 1.5rem 3rem;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 24px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  transition: transform 0.35s ease, box-shadow 0.35s ease, background 0.35s ease;
+  font-family: inherit;
+  color: var(--royal-blue);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.15);
+  animation: buttonPulse 6s ease-in-out infinite;
+}
+
+.auth-button.login-button {
+  background: linear-gradient(135deg, rgba(65, 105, 225, 0.98), rgba(107, 140, 232, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  color: #ffffff;
+  box-shadow: 0 28px 55px rgba(18, 20, 60, 0.45);
+}
+
+.auth-button.signup-button {
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(65, 105, 225, 0.3);
+  color: var(--royal-blue-dark);
+}
+
+.auth-button svg {
+  color: var(--royal-blue);
+}
+
+.login-button:hover,
+.signup-button:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 32px 65px rgba(15, 23, 42, 0.35);
+  color: #ffffff;
+}
+
+.auth-button svg {
+  transition: transform 0.3s ease;
+}
+
+.auth-button:hover svg {
+  transform: scale(1.1);
+}
+
+.landing-footer {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1rem;
+  font-weight: 300;
+  margin-top: 3rem;
+}
+
+@media (max-width: 768px) {
+  .landing-title {
+    font-size: 3rem;
+  }
+  
+  .landing-tagline {
+    font-size: 1.2rem;
+  }
+  
+  .illustration {
+    gap: 2rem;
+  }
+  
+  .illustration-item {
+    width: 90px;
+    height: 90px;
+  }
+  
+  .illustration-item svg {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .auth-buttons-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .auth-button {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+/* Enhanced hero styling overrides */
+.landing-title {
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.08));
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.3);
+  animation: glowPulse 6s ease-in-out infinite;
+}
+
+.landing-tagline {
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+}
+
+.auth-button {
+  border-radius: 24px;
+  gap: 0.85rem;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.15);
+  animation: buttonPulse 6s ease-in-out infinite;
+}
+
+.auth-button.login-button {
+  background: linear-gradient(135deg, rgba(65, 105, 225, 0.98), rgba(107, 140, 232, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  color: #ffffff;
+  box-shadow: 0 28px 55px rgba(18, 20, 60, 0.45);
+}
+
+.auth-button.signup-button {
+  border: 1px solid rgba(65, 105, 225, 0.3);
+}
+
+.login-button:hover,
+.signup-button:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 32px 65px rgba(15, 23, 42, 0.35);
+  color: #ffffff;
+}
+
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 15px 30px rgba(15, 23, 42, 0.2);
+  }
+  100% {
+    box-shadow: 0 35px 80px rgba(15, 23, 42, 0.4);
+  }
+}
+
+@keyframes buttonPulse {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}

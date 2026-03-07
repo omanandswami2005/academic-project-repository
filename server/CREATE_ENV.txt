@@ -1,0 +1,30 @@
+INSTRUCTIONS TO CREATE .env FILE
+================================
+
+1. Create a new file named ".env" (without quotes) in this directory (server/)
+
+2. Copy and paste the following content into the file:
+
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+FRONTEND_URL=http://localhost:3000
+
+3. Replace the placeholder values:
+   - EMAIL_USER: Your Gmail address (or other email)
+   - EMAIL_PASS: Your Gmail App Password (see instructions below)
+   - FRONTEND_URL: Keep as http://localhost:3000 for development
+
+4. For Gmail App Password:
+   - Go to: https://myaccount.google.com/security
+   - Enable 2-Step Verification if not already enabled
+   - Go to: https://myaccount.google.com/apppasswords
+   - Select "Mail" and "Other (Custom name)"
+   - Enter "RSCOE Project Management" as name
+   - Click "Generate"
+   - Copy the 16-character password (remove spaces)
+   - Use it in EMAIL_PASS above
+
+5. Test your configuration:
+   cd server
+   npm run test-email
+

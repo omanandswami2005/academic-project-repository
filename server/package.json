@@ -1,13 +1,11 @@
 {
-  "name": "server",
+  "name": "aprs-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "APRS - Academic Project Repository System Backend",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node Index.js",
-    "dev": "node Index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test-email": "node test-email.js"
+    "start": "node src/index.js",
+    "dev": "node src/index.js"
   },
   "keywords": [],
   "author": "",

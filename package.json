@@ -1,23 +1,16 @@
 {
-  "name": "rscoe-project-management",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "axios": "^1.13.2",
-    "lucide-react": "^0.294.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.2.43",
-    "@types/react-dom": "^18.2.17",
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^7.3.0"
-  }
+    "name": "academic-project-repository",
+    "version": "1.0.0",
+    "description": "APRS - Academic Project Repository & Skill Mapping System",
+    "private": true,
+    "scripts": {
+        "client": "cd client && npm run dev",
+        "server": "cd server && npm run dev",
+        "dev": "concurrently \"npm run server\" \"npm run client\"",
+        "install:all": "cd client && npm install && cd ../server && npm install",
+        "build": "cd client && npm run build"
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.2"
+    }
 }

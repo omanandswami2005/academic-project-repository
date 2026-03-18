@@ -267,3 +267,11 @@ aprs/
 *   **Is system usable now?** No. The core data saving works, but the lack of authentication and reliance on mock data makes it unfit for real users.
 *   **Can it be deployed now?** No. It contains severe security flaws (unprotected endpoints, insecure password changes).
 *   **What are blockers?** Implementation of JWT Authentication, RBAC middleware, replacement of mock data with real API calls, and schema updates to support group/skill mapping.
+
+### 16. 📌 SRS Advanced Features (Deferred / Planned)
+
+- Project Continuity (design approach)
+- Radar Chart logic
+- Plagiarism detection approach
+- Overleaf integration strategy
+- Industry ranking system

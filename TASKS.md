@@ -1,98 +1,77 @@
 # TASKS.md
 
----
-
-## 1. 🔥 High Priority (Blocking Issues)
+## 1. High Priority (Blocking Issues)
 
 | Task Name | Description | Backend/Frontend | Files/Modules Affected | Complexity |
 | :--- | :--- | :--- | :--- | :--- |
-| **Implement JWT Authentication** | Update login to generate and return JWT. Add auth middleware to protect all routes. | Backend | `server/src/controllers/auth.controller.js`, `server/src/middleware/auth.js`, `server/src/routes/*.js` | High |
-| **Implement Role-Based Access Control (RBAC)** | Restrict API access based on user roles (student, teacher, admin, expert). | Backend | `server/src/middleware/auth.js`, `server/src/routes/*.js` | Medium |
-| **Remove Hardcoded Mock Data** | Remove all mock data from dashboards and replace with API-driven data or loading states. | Frontend | `client/src/pages/dashboards/*.jsx` | Low |
-| **API Request Validation** | Validate all incoming requests using Joi/express-validator to ensure data integrity. | Backend | `server/src/middleware/validate.js`, `server/src/routes/*.js` | Medium |
-| **Schema Update: Student Identity (PRN Enforcement)** | Add PRN and mobile fields, enforce uniqueness and validation at schema + API level. | Backend | `server/src/models/User.js` | Medium |
-| **Schema Update: Group Projects** | Modify Project schema to support 1–3 members per project. | Backend | `server/src/models/Project.js` | Medium |
-| **Schema Update: Domain/Skill Tagging** | Add array-based domain/skill tagging to projects. | Backend | `server/src/models/Project.js` | Low |
-| **File Access Control** | Restrict file downloads based on user roles and permissions. | Backend | `server/src/controllers/project.controller.js`, middleware | Medium |
+| **Implement JWT Authentication** | Update login to generate and return a JWT. Create an `authMiddleware` to verify tokens on protected routes to secure the API. | Backend | `server/src/controllers/auth.controller.js`, `server/src/middleware/auth.js`, `server/src/routes/*.js` | High |
+| **Implement Role-Based Access Control (RBAC)** | Create an `authorize` middleware to restrict endpoint access based on user role (student, teacher, expert). | Backend | `server/src/middleware/auth.js`, `server/src/routes/*.js` | Medium |
+| **Remove Hardcoded Mock Data** | Delete all hardcoded mock arrays from dashboard components to prevent false assumptions of completion. Replace with empty states/loaders. | Frontend | `client/src/pages/dashboards/TeacherDashboard.jsx`, `client/src/pages/dashboards/IndustryExpertDashboard.jsx` | Low |
+| **API Request Validation** | Add a validation layer (e.g., Joi or express-validator) to sanitize and validate incoming payloads for auth and project endpoints. | Backend | `server/src/middleware/validate.js`, `server/src/routes/*.js` | Medium |
+| **Schema Update: Student Identity & Groups** | Update User and Project Mongoose schemas to mandate PRN/Mobile mapping and support 1-3 members per project group. | Backend | `server/src/models/User.js`, `server/src/models/Project.js` | Medium |
+| **Schema Update: Domain Tagging** | Update Project schema to support an array of skill/domain tags as required by the SRS. | Backend | `server/src/models/Project.js` | Low |
 
 ---
 
-## 2. ⚙️ Medium Priority (Core Features)
+## 2. Medium Priority (Core Features)
 
 | Task Name | Description | Backend/Frontend | Files/Modules Affected | Complexity |
 | :--- | :--- | :--- | :--- | :--- |
-| **Project Search & Filtering API** | Build search API using MongoDB aggregation (filters: tags, branch, status). Include pagination. | Backend | `server/src/controllers/project.controller.js`, `routes/project.routes.js` | High |
-| **Pagination & Query Optimization** | Add pagination (limit/skip), indexing for performance optimization. | Backend | `server/src/models/*.js`, controllers | Medium |
-| **Integrate Dashboards with Live API** | Connect dashboards to real backend APIs (remove static UI assumptions). | Frontend | `client/src/pages/dashboards/*.jsx`, `client/src/api/` | High |
-| **Unique Project ID Generation** | Generate IDs in format `BRANCH_YEAR_ID`. | Backend | `server/src/models/Project.js`, controller | Medium |
-| **Project Continuity / Batch Shifting** | Allow projects to be cloned or continued across batches. | Fullstack | controllers + frontend dashboards | High |
-| **Cross-Department Visibility UI** | Enable viewing approved/public projects across departments. | Fullstack | `client/src/pages/...`, backend queries | Medium |
-| **Centralized API Service Layer** | Create Axios instance with interceptors (JWT handling). | Frontend | `client/src/api/axios.js` | Medium |
-| **Department Management System** | Create Department model and APIs for department-level data. | Backend | `server/src/models/Department.js`, controllers, routes | Medium |
-| **Admin Management APIs** | APIs for managing users, departments, and system controls. | Backend | `server/src/controllers/admin.controller.js` | Medium |
-| **Industry Ranking System** | Rank students based on skills, project phases, and ratings. | Backend | aggregation logic in controllers | Medium |
+| **Project Search & Filtering API** | Create a robust MongoDB aggregation pipeline endpoint to allow searching projects by skill tags, domain, branch, and status. | Backend | `server/src/controllers/project.controller.js`, `server/src/routes/project.routes.js` | High |
+| **Integrate Dashboards with Live API** | Connect the Teacher and Industry Expert dashboards to the real backend endpoints (fetching students and filtered projects). | Frontend | `client/src/pages/dashboards/TeacherDashboard.jsx`, `client/src/pages/dashboards/IndustryExpertDashboard.jsx`, `client/src/api/` | High |
+| **Unique Project ID Generation** | Implement a sequence generator to assign unique IDs to projects in the format `BRANCH_YEAR_ID`. | Backend | `server/src/models/Project.js`, `server/src/controllers/project.controller.js` | Medium |
+| **Project Continuity / Batch Shifting** | Add an endpoint and UI flow to allow an existing project to be shifted or cloned into a new batch for continuous improvement. | Fullstack | `server/src/controllers/project.controller.js`, `client/src/pages/dashboards/TeacherDashboard.jsx` | High |
+| **Cross-Department Visibility UI** | Implement frontend filters and adjust backend queries to allow viewing "good" (public/approved) projects from other departments. | Fullstack | `server/src/pages/dashboards/*.jsx`, `server/src/controllers/project.controller.js` | Medium |
+| **Centralized API Service Layer** | Refactor frontend to use a centralized Axios instance with interceptors for attaching the JWT, rather than hardcoded URLs. | Frontend | `client/src/api/axios.js`, all `client/src/pages/` | Medium |
 
 ---
 
-## 3. 🧪 Low Priority (Enhancements)
+## 3. Low Priority (Enhancements)
 
 | Task Name | Description | Backend/Frontend | Files/Modules Affected | Complexity |
 | :--- | :--- | :--- | :--- | :--- |
-| **Visual Skill Profiles (Radar Charts)** | Display skill visualization using chart libraries. | Frontend | dashboards/profile pages | Medium |
-| **Overleaf / LaTeX Integration** | Generate formatted reports automatically from project data. | Backend | `server/src/services/report.service.js` | High |
-| **Plagiarism/Repetition Check** | Detect duplicate/similar projects using text similarity. | Backend | `server/src/services/plagiarism.service.js` | High |
-| **Migrate File Storage to Cloud** | Replace local storage with AWS S3 or GCP storage. | Backend | upload middleware/config | Medium |
-| **Global Error Handling & Logging** | Implement Morgan (requests) + Winston (errors). | Backend | `server/src/app.js`, utils/logger | Low |
-| **Rate Limiting (Security)** | Prevent brute-force attacks on auth endpoints. | Backend | middleware | Low |
-| **Basic API Testing** | Add unit/integration tests for critical APIs. | Backend | test files | Medium |
+| **Visual Skill Profiles (Radar Charts)** | Integrate a charting library (e.g., Recharts, Chart.js) to display Radar/Spider charts of student skills based on project tags. | Frontend | `client/src/pages/dashboards/StudentDashboard.jsx`, `client/src/pages/common/ProfilePage.jsx` | Medium |
+| **Overleaf / LaTeX Integration** | Implement an automated report generation flow that compiles project data into a formatted LaTeX document. | Backend | `server/src/services/report.service.js`, `server/src/controllers/project.controller.js` | High |
+| **Plagiarism/Repetition Check** | Build a basic text similarity check (or integrate an external API) when a new project title/synopsis is submitted. | Backend | `server/src/services/plagiarism.service.js` | High |
+| **Migrate File Storage to Cloud** | Replace local Multer disk storage with AWS S3 or Google Cloud Storage for production scalability. | Backend | `server/src/middleware/upload.js`, `server/src/config/s3.js` | Medium |
+| **Implement Global Error Handling & Logging** | Setup Morgan for request logging and Winston for application logging. Standardize JSON error responses. | Backend | `server/src/app.js`, `server/src/utils/logger.js` | Low |
 
 ---
 
-## 4. 🔗 Task Dependencies
+## 4. Task Dependencies
 
-- JWT Authentication → required before RBAC, API integration
-- Schema Updates → required before Search API
-- Search API → required before Dashboard integration
-- Remove Hardcoded Data → must be done early
-- Department System → required before Admin APIs
-- Pagination → required before production deployment
-
----
-
-## 5. 📦 Sprint Plan
-
-### 🚀 Phase 1: Stabilization (Sprint 1)
-- JWT Authentication
-- RBAC
-- Remove Hardcoded Data
-- API Validation
-- Centralized API Layer
-- PRN Enforcement
+*   **Implement JWT Authentication** must be completed BEFORE **Integrate Dashboards with Live API** and **Centralized API Service Layer**.
+*   **Schema Update: Domain Tagging** must be completed BEFORE **Project Search & Filtering API**.
+*   **Project Search & Filtering API** must be completed BEFORE **Integrate Dashboards with Live API** (specifically for the Industry Expert dashboard).
+*   **Schema Update: Student Identity & Groups** must be completed BEFORE **Unique Project ID Generation** (if ID relies on student data).
+*   **Remove Hardcoded Mock Data** is an independent blocker that should be merged immediately to stop false assumptions.
 
 ---
 
-### ⚙️ Phase 2: SRS Alignment (Sprint 2–3)
-- Group Projects
-- Domain Tagging
-- Search & Filtering API
-- Dashboard Integration
-- Unique Project ID
-- Cross-Department Visibility
-- Project Continuity
-- Department System
-- Admin APIs
-- Industry Ranking
+## 5. Sprint Plan (3 Phases)
 
----
+### Phase 1: Stabilization (Sprint 1)
+*Focus: Security, Data Integrity, and Architectural Cleanup.*
+*   Remove Hardcoded Mock Data
+*   Implement JWT Authentication
+*   Implement Role-Based Access Control (RBAC)
+*   API Request Validation
+*   Centralized API Service Layer
 
-### 🏁 Phase 3: Production Readiness (Sprint 4)
-- Pagination & Optimization
-- Radar Charts
-- Logging & Error Handling
-- File Storage Migration
-- Rate Limiting
-- Testing
-- Overleaf Integration
-- Plagiarism Detection
+### Phase 2: SRS Alignment (Sprint 2 & 3)
+*Focus: Meeting the core requirements defined in the SRS.*
+*   Schema Update: Student Identity & Groups
+*   Schema Update: Domain Tagging
+*   Project Search & Filtering API
+*   Integrate Dashboards with Live API
+*   Unique Project ID Generation
+*   Cross-Department Visibility UI
+*   Project Continuity / Batch Shifting
 
----
+### Phase 3: Production Readiness & Enhancements (Sprint 4)
+*Focus: Analytics, Automation, and Deployment readiness.*
+*   Visual Skill Profiles (Radar Charts)
+*   Migrate File Storage to Cloud
+*   Implement Global Error Handling & Logging
+*   Overleaf / LaTeX Integration
+*   Plagiarism/Repetition Check

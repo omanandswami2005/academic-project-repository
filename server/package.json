@@ -4,21 +4,34 @@
   "description": "APRS - Academic Project Repository System Backend",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node src/index.js"
+    "start": "node -r ./scripts/dns-fix.js src/index.js",
+    "dev": "node --watch -r ./scripts/dns-fix.js src/index.js",
+    "db:migrate": "node -r ./scripts/dns-fix.js scripts/migrate.js",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1019.0",
+    "@aws-sdk/s3-request-presigner": "^3.1019.0",
+    "@neondatabase/serverless": "^1.0.2",
     "bcryptjs": "^3.0.3",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.1.0",
-    "multer": "^1.4.5-lts.1",
-    "nodemailer": "^7.0.12"
+    "resend": "^4.8.0",
+    "undici": "^7.24.6",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.10",
+    "pg": "^8.20.0"
   }
 }

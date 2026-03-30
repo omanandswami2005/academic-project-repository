@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Mail, Phone, User, Lock, Eye, EyeOff, X } from 'lucide-react'
-import axios from 'axios'
+import { useAuth } from '../../context/AuthContext'
+import { userAPI, authAPI } from '../../services/api'
+import toast from 'react-hot-toast'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import './SupportPages.css'
 
 const ProfilePage = () => {
-  const [user, setUser] = useState(null)
+  const { user, updateUser } = useAuth()
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -29,23 +31,16 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData)
-        setUser(parsedUser)
-        setProfile({
-          name: parsedUser.username || '',
-          email: parsedUser.email || '',
-          phone: '',
-          bio: '',
-          identifier: parsedUser.id || ''
-        })
-      } catch (e) {
-        console.error('Error parsing user data:', e)
-      }
+    if (user) {
+      setProfile({
+        name: user.username || '',
+        email: user.email || '',
+        phone: user.mobile || '',
+        bio: '',
+        identifier: user.id || ''
+      })
     }
-  }, [])
+  }, [user])
 
   const handleChange = (field, value) => {
     setProfile(prev => ({ ...prev, [field]: value }))
@@ -83,26 +78,25 @@ const ProfilePage = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/update-password', {
-        userId: user.id,
+      await authAPI.updatePassword({
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       })
 
-      if (response.status === 200) {
-        setPasswordMessage('Password updated successfully!')
-        setPasswordData({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        })
-        setTimeout(() => {
-          setShowPasswordModal(false)
-          setPasswordMessage('')
-        }, 1500)
-      }
+      setPasswordMessage('Password updated successfully!')
+      toast.success('Password updated!')
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      })
+      setTimeout(() => {
+        setShowPasswordModal(false)
+        setPasswordMessage('')
+      }, 1500)
     } catch (error) {
       setPasswordError(error.response?.data?.message || 'Failed to update password. Please try again.')
+      toast.error(error.response?.data?.message || 'Failed to update password.')
     } finally {
       setLoading(false)
     }
@@ -170,7 +164,18 @@ const ProfilePage = () => {
                 onChange={(e) => handleChange('bio', e.target.value)}
               />
             </label>
-            <button type="button" className="primary-btn">
+            <button type="button" className="primary-btn" onClick={async () => {
+              try {
+                const { data } = await userAPI.updateProfile({
+                  username: profile.name,
+                  mobile: profile.phone,
+                })
+                updateUser(data.user)
+                toast.success('Profile updated!')
+              } catch (err) {
+                toast.error(err.response?.data?.message || 'Failed to update profile.')
+              }
+            }}>
               Save Changes
             </button>
           </form>

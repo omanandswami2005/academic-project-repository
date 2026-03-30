@@ -1,3 +1,78 @@
-1) Proper Reordering the Folder structure
-2) recreating the SRS based on current code features and to be implementable features
-3) delete not required files and eslint setup 
+══════════════════════════════════════════════════════
+  APRS — Project Checklist  (updated Mar 31, 2026)
+══════════════════════════════════════════════════════
+
+━━━ INFRASTRUCTURE ━━━
+[x] Migrate database from MongoDB → PostgreSQL (Neon serverless)
+[x] Set up Drizzle ORM with full schema (8 tables, 9 FK constraints, 18 indexes)
+[x] DNS fix for college network (Cloudflare 1.1.1.1 preload via scripts/dns-fix.js)
+[x] Run migrations — all 35 SQL statements executed successfully
+[x] Configure Cloudflare R2 bucket for file storage
+[x] Configure Resend for transactional email
+[x] Set up all environment variables (.env with 16 vars)
+
+━━━ BACKEND (SERVER) ━━━
+[x] Express 5 app with Helmet, CORS, rate limiting
+[x] Auth: signup, login, logout, refresh token rotation (JWT 15m + 7d)
+[x] Auth: forgot password / reset password via Resend email
+[x] Auth: update password (authenticated)
+[x] Role-based middleware (student / teacher / expert)
+[x] Projects CRUD (create, read, update, delete)
+[x] Project phases (update single + bulk update, 6 phases per project)
+[x] Project status management (pending → under_review → approved → needs_revision)
+[x] File upload/download to Cloudflare R2 (50 MB limit, 10 files, 15 mime types)
+[x] Student routes (all students, by branch, skill map)
+[x] User profile (get + update)
+[x] Feedback with rubric scoring (teacher + expert)
+[x] Notifications (list + mark all read)
+[x] Analytics (skill radar, department stats, top students leaderboard)
+[x] Zod v4 validation middleware (err.issues fix)
+[x] Search projects by query (GET /projects?q=)
+[x] 45/45 API tests passing (scripts/test-api.js)
+
+━━━ FRONTEND (CLIENT) ━━━
+[x] React 18 + Vite 7 setup (port 3000)
+[x] React Router 6 with role-based protected routes
+[x] AuthContext with access/refresh token auto-refresh interceptor
+[x] ThemeContext
+[x] DashboardLayout component
+[x] LandingPage
+[x] RoleSelection + BranchSelection
+[x] LoginPage (student / teacher / expert)
+[x] SignupPage — all roles with year dropdown for students
+[x] ForgotPassword + ResetPassword
+[x] HomeDashboard — project stats + recent notifications + role quick links
+[x] StudentDashboard — real API data (phases, feedback, progress, analytics, tasks)
+[x] TeacherDashboard — real API students/projects, review queue from live data, safe detail overlay
+[x] IndustryExpertDashboard — correct field mappings, rubric feedback with rating
+[x] ProfilePage — view profile + update password
+[x] HelpPage + SupportPages
+
+━━━ UI / BUG FIXES ━━━
+[x] StudentDashboard: phase update uses phaseNumber (not phaseId)
+[x] StudentDashboard: all hardcoded fallbacks removed — tasks/progress/analytics/feedback use real data
+[x] TeacherDashboard: prn field for roll display, search by prn/name
+[x] TeacherDashboard: review queue derived from real uploaded projects
+[x] TeacherDashboard: detail overlay safe for API students (no crash on missing fields)
+[x] IndustryExpertDashboard: studentName/studentBranch field mapping
+[x] IndustryExpertDashboard: computed rating field in feedback submission
+[x] SignupPage: year dropdown added for student role
+[x] HomeDashboard: console.error added to catch block
+[x] Client builds clean — 1441 modules, 0 errors
+
+━━━ DOCUMENTATION ━━━
+[x] README.md — full tech stack, services, schema, API table, quick start, DNS note
+[ ] SRS document (based on current implemented features)
+[ ] API docs / Postman collection
+
+━━━ PENDING / TODO ━━━
+[ ] Resend domain verification → to send emails to any address (currently sandbox only)
+[ ] ProfilePage: fetch fresh data from API on mount (currently uses cached AuthContext user)
+[ ] File upload UI in StudentDashboard (upload button → R2 flow)
+[ ] File viewer/download in TeacherDashboard detail overlay (currently placeholder buttons)
+[ ] Deploy backend (Railway / Render / Fly.io)
+[ ] Deploy frontend (Vercel / Netlify)
+[ ] Set up production environment variables
+[ ] ESLint + Prettier config
+[ ] Remove unused mock data arrays (studentsData, reviewQueueData in TeacherDashboard)
+[ ] Folder structure cleanup + remove orphaned files

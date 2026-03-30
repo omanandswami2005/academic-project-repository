@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
   Briefcase,
@@ -11,6 +11,9 @@ import {
   User
 } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import { useAuth } from '../../context/AuthContext'
+import { projectAPI, feedbackAPI } from '../../services/api'
+import toast from 'react-hot-toast'
 import './IndustryExpertDashboard.css'
 
 const branchFilters = ['All', 'CSE', 'CSBS', 'IT', 'Mechanical', 'Electrical', 'Civil', 'A&R']
@@ -158,6 +161,7 @@ const heroStats = [
 ]
 
 const IndustryExpertDashboard = () => {
+  const { user, logout } = useAuth()
   const [filters, setFilters] = useState({
     branch: 'All',
     technology: 'All',
@@ -168,9 +172,49 @@ const IndustryExpertDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProject, setSelectedProject] = useState(null)
   const [evaluation, setEvaluation] = useState(evaluationTemplate)
+  const [apiProjects, setApiProjects] = useState([])
+  const [loadingProjects, setLoadingProjects] = useState(false)
+
+  // Fetch projects from API
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoadingProjects(true)
+      try {
+        const { data } = await projectAPI.getAll({ visibility: 'public', limit: 50 })
+        setApiProjects(data.projects || [])
+      } catch (error) {
+        console.error('Error fetching projects:', error)
+      } finally {
+        setLoadingProjects(false)
+      }
+    }
+    fetchProjects()
+  }, [])
+
+  // Use API projects if available, fall back to mock catalog
+  const allProjects = apiProjects.length > 0 ? apiProjects.map(p => ({
+    ...p,
+    student: p.studentName || 'Student',
+    roll: p.uniqueProjectId || '',
+    branch: p.studentBranch || 'CSE',
+    year: new Date(p.createdAt).getFullYear().toString(),
+    domain: p.domainTags?.join(', ') || 'General',
+    category: p.domainTags?.[0] || 'General',
+    technology: p.domainTags?.[0] || 'General',
+    progress: Math.round(((p.stars || 0) / 6) * 100),
+    innovationScore: p.stars ? (p.stars * 1.5 + 1).toFixed(1) : '7.0',
+    status: p.status === 'approved' ? 'On Track' : p.status === 'needs_revision' ? 'Behind' : 'On Track',
+    description: p.description,
+    problem: p.description,
+    techStack: p.domainTags || [],
+    team: [{ name: p.studentName || 'Student', role: 'Lead' }],
+    documents: [],
+    timeline: [],
+    featured: (p.stars || 0) >= 3,
+  })) : projectCatalog
 
   const filteredProjects = useMemo(() => {
-    return projectCatalog.filter(project => {
+    return allProjects.filter(project => {
       const branchOk = filters.branch === 'All' || project.branch === filters.branch
       const techOk = filters.technology === 'All' || project.technology === filters.technology
       const yearOk = filters.year === 'All' || project.year === filters.year
@@ -188,9 +232,9 @@ const IndustryExpertDashboard = () => {
 
       return branchOk && techOk && yearOk && categoryOk && completionOk && searchOk
     })
-  }, [filters, searchTerm])
+  }, [filters, searchTerm, allProjects])
 
-  const featuredProjects = projectCatalog.filter(project => project.featured)
+  const featuredProjects = allProjects.filter(project => project.featured)
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }))
@@ -487,7 +531,30 @@ const IndustryExpertDashboard = () => {
                       onChange={(e) => updateEvaluation('hireability', Number(e.target.value))}
                     />
                   </label>
-                  <button type="button" className="primary-btn">
+                  <button type="button" className="primary-btn" onClick={async () => {
+                    if (!evaluation.feedback.trim()) {
+                      toast.error('Please add feedback comments')
+                      return
+                    }
+                    try {
+                      const avgRating = Math.round((evaluation.innovation + evaluation.feasibility + evaluation.hireability) / 3) || 3
+                      await feedbackAPI.create({
+                        projectId: selectedProject.id,
+                        rating: Math.min(5, Math.max(1, avgRating)),
+                        comment: evaluation.feedback,
+                        rubricScores: {
+                          innovation: Number(evaluation.innovation),
+                          feasibility: Number(evaluation.feasibility),
+                          hireability: Number(evaluation.hireability),
+                        }
+                      })
+                      toast.success('Evaluation submitted!')
+                      setEvaluation(evaluationTemplate)
+                      closeProject()
+                    } catch (err) {
+                      toast.error(err.response?.data?.message || 'Failed to submit evaluation')
+                    }
+                  }}>
                     Submit Evaluation
                   </button>
                 </div>

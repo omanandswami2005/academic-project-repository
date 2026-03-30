@@ -4,13 +4,15 @@
     "description": "APRS - Academic Project Repository & Skill Mapping System",
     "private": true,
     "scripts": {
-        "client": "cd client && npm run dev",
-        "server": "cd server && npm run dev",
-        "dev": "concurrently \"npm run server\" \"npm run client\"",
-        "install:all": "cd client && npm install && cd ../server && npm install",
-        "build": "cd client && npm run build"
+        "client": "cd client && pnpm dev",
+        "server": "cd server && pnpm dev",
+        "dev": "concurrently \"pnpm run server\" \"pnpm run client\"",
+        "install:all": "cd client && pnpm install && cd ../server && pnpm install",
+        "build": "cd client && pnpm build",
+        "db:push": "cd server && pnpm drizzle-kit push",
+        "db:studio": "cd server && pnpm drizzle-kit studio"
     },
     "devDependencies": {
-        "concurrently": "^9.1.2"
+        "concurrently": "^9.2.1"
     }
 }

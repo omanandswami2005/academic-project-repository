@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import {
   LayoutDashboard,
   Building2,
@@ -24,6 +23,9 @@ import {
 } from 'lucide-react'
 import './TeacherDashboard.css'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import { useAuth } from '../../context/AuthContext'
+import { studentAPI, projectAPI, feedbackAPI } from '../../services/api'
+import toast from 'react-hot-toast'
 
 const studentsData = [
   {
@@ -360,6 +362,7 @@ const formatNow = () =>
 const TeacherDashboard = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user, logout } = useAuth()
   const branchFromState = location.state?.branch
 
   const [selectedBranch, setSelectedBranch] = useState(
@@ -387,13 +390,12 @@ const TeacherDashboard = () => {
 
       setLoadingStudents(true)
       try {
-        const response = await axios.get(`http://localhost:5000/api/students/branch/${selectedBranch}`)
-        if (response.data.students) {
-          setRegisteredStudents(response.data.students)
-          // Initialize discussion and rubric maps
+        const { data } = await studentAPI.getByBranch(selectedBranch)
+        if (data.students) {
+          setRegisteredStudents(data.students)
           const newDiscussionMap = {}
           const newRubricScores = {}
-          response.data.students.forEach(student => {
+          data.students.forEach(student => {
             newDiscussionMap[student.id] = []
             newRubricScores[student.id] = createRubricTemplate()
           })
@@ -408,7 +410,6 @@ const TeacherDashboard = () => {
       }
     }
     fetchStudents()
-    // Refresh students every 30 seconds
     const interval = setInterval(fetchStudents, 30000)
     return () => clearInterval(interval)
   }, [selectedBranch])
@@ -420,19 +421,8 @@ const TeacherDashboard = () => {
 
       setLoadingProjects(true)
       try {
-        const response = await axios.get('http://localhost:5000/api/projects')
-        if (response.data.projects) {
-          // Filter projects by students in the selected branch
-          const studentsResponse = await axios.get(`http://localhost:5000/api/students/branch/${selectedBranch}`)
-          const studentIds = studentsResponse.data.students.map(s => s.id)
-
-          // Filter projects to only show those from students in selected branch
-          const filteredProjects = response.data.projects.filter(project =>
-            studentIds.includes(project.studentId.toString()) ||
-            studentIds.includes(project.studentId._id?.toString())
-          )
-          setUploadedProjects(filteredProjects)
-        }
+        const { data } = await projectAPI.getAll({ branch: selectedBranch })
+        setUploadedProjects(data.projects || [])
       } catch (error) {
         console.error('Error fetching projects:', error)
       } finally {
@@ -440,7 +430,6 @@ const TeacherDashboard = () => {
       }
     }
     fetchProjects()
-    // Refresh projects every 30 seconds
     const interval = setInterval(fetchProjects, 30000)
     return () => clearInterval(interval)
   }, [selectedBranch])
@@ -448,17 +437,14 @@ const TeacherDashboard = () => {
   // Update project status
   const handleStatusUpdate = async (projectId, newStatus) => {
     try {
-      const response = await axios.patch(`http://localhost:5000/api/projects/${projectId}/status`, {
-        status: newStatus
-      })
-      if (response.data.project) {
-        setUploadedProjects(prev =>
-          prev.map(p => p._id === projectId ? response.data.project : p)
-        )
-      }
+      const { data } = await projectAPI.updateStatus(projectId, newStatus)
+      setUploadedProjects(prev =>
+        prev.map(p => p.id === projectId ? { ...p, status: newStatus } : p)
+      )
+      toast.success('Status updated')
     } catch (error) {
       console.error('Error updating status:', error)
-      alert('Failed to update project status')
+      toast.error('Failed to update project status')
     }
   }
 
@@ -487,13 +473,32 @@ const TeacherDashboard = () => {
 
   const reviewQueue = useMemo(() => {
     if (!selectedBranch) return []
-    return reviewQueueData.filter(item => item.branch === selectedBranch)
-  }, [selectedBranch])
+    return uploadedProjects
+      .filter(p => p.status === 'pending' || p.status === 'under_review')
+      .map(p => ({
+        id: p.id,
+        icon: p.status === 'pending' ? UploadCloud : FileText,
+        iconBg: p.status === 'pending' ? 'rgba(65, 105, 225, 0.12)' : 'rgba(139, 92, 246, 0.12)',
+        iconColor: p.status === 'pending' ? '#4169E1' : '#8b5cf6',
+        category: p.status === 'pending' ? 'New Upload' : 'Under Review',
+        student: p.studentName || 'Unknown',
+        branch: p.studentBranch || selectedBranch,
+        projectTitle: p.title,
+        detail: p.description ? p.description.substring(0, 60) + '...' : 'No description',
+        due: p.status === 'pending' ? 'Needs review' : 'In review',
+        timeAgo: new Date(p.createdAt).toLocaleDateString(),
+        priority: p.status === 'pending' ? 'High' : 'Medium',
+      }))
+  }, [selectedBranch, uploadedProjects])
 
   const suggestionsList = useMemo(() => {
     if (!searchTerm) return []
+    const term = searchTerm.toLowerCase()
     return filteredStudents
-      .filter(student => student.roll.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter(student =>
+        (student.prn || student.roll || '').toLowerCase().includes(term) ||
+        (student.name || '').toLowerCase().includes(term)
+      )
       .slice(0, 5)
   }, [searchTerm, filteredStudents])
 
@@ -517,8 +522,9 @@ const TeacherDashboard = () => {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem('selectedBranch')
+    await logout()
     navigate('/')
   }
 
@@ -529,11 +535,11 @@ const TeacherDashboard = () => {
 
   const handleSuggestionSelect = (student) => {
     setSelectedStudent(student)
-    setSearchTerm(student.roll)
+    setSearchTerm(student.prn || student.roll || student.name)
     setShowSuggestions(false)
   }
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!selectedStudent || !commentDraft.trim()) return
     const newEntry = { author: 'You', message: commentDraft.trim(), time: formatNow() }
     setDiscussionMap(prev => ({
@@ -541,6 +547,7 @@ const TeacherDashboard = () => {
       [selectedStudent.id]: [...(prev[selectedStudent.id] || []), newEntry]
     }))
     setCommentDraft('')
+    toast.success('Comment added')
   }
 
   const handleRubricChange = (studentId, field, value) => {
@@ -683,7 +690,7 @@ const TeacherDashboard = () => {
                         handleSuggestionSelect(student)
                       }}
                     >
-                      <span className="suggestion-roll">{student.roll}</span>
+                      <span className="suggestion-roll">{student.prn || student.roll || student.email}</span>
                       <span>{student.name}</span>
                       <span className="suggestion-status">{student.projectTitle}</span>
                     </button>
@@ -750,7 +757,7 @@ const TeacherDashboard = () => {
                   ) : (
                     filteredStudents.map(student => (
                       <tr key={student.id}>
-                        <td>{student.roll || student.email}</td>
+                        <td>{student.prn || student.roll || student.email}</td>
                         <td>{student.name}</td>
                         <td>{student.projectTitle}</td>
                         <td>
@@ -794,12 +801,12 @@ const TeacherDashboard = () => {
             ) : (
               <div className="projects-grid">
                 {uploadedProjects.map(project => (
-                  <div key={project._id} className="project-card">
+                  <div key={project.id} className="project-card">
                     <div className="project-card-header">
                       <div>
-                        <h3>{project.projectName}</h3>
+                        <h3>{project.title}</h3>
                         <p className="project-student">
-                          <strong>{project.studentName}</strong> • {project.studentEmail}
+                          <strong>{project.uniqueProjectId}</strong>
                         </p>
                       </div>
                       <span className={`status-chip project-status ${project.status}`}>
@@ -807,36 +814,14 @@ const TeacherDashboard = () => {
                       </span>
                     </div>
                     <p className="project-description-text">{project.description}</p>
-                    {project.files && project.files.length > 0 && (
-                      <div className="project-files">
-                        <p className="files-label">Files ({project.files.length}):</p>
-                        <div className="files-list">
-                          {project.files.map((file, index) => (
-                            <div key={index} className="file-item">
-                              <FileText size={16} />
-                              <span className="file-name">{file.originalName}</span>
-                              <a
-                                href={`http://localhost:5000${file.filePath}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="download-link"
-                                title="Download"
-                              >
-                                <Download size={16} />
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                     <div className="project-card-footer">
                       <small className="upload-date">
-                        Uploaded: {new Date(project.uploadedAt).toLocaleString()}
+                        Created: {new Date(project.createdAt).toLocaleString()}
                       </small>
                       <div className="status-actions">
                         <select
                           value={project.status}
-                          onChange={(e) => handleStatusUpdate(project._id, e.target.value)}
+                          onChange={(e) => handleStatusUpdate(project.id, e.target.value)}
                           className="status-select"
                         >
                           <option value="pending">Pending</option>
@@ -944,7 +929,7 @@ const TeacherDashboard = () => {
               <div className="student-detail-card">
                 <div className="detail-header">
                   <div>
-                    <p className="detail-roll">{selectedStudent.roll}</p>
+                    <p className="detail-roll">{selectedStudent.prn || selectedStudent.roll || selectedStudent.email}</p>
                     <h2>{selectedStudent.name}</h2>
                     <p className="detail-desc">{selectedStudent.projectTitle}</p>
                   </div>
@@ -958,16 +943,16 @@ const TeacherDashboard = () => {
                     <h3>Project Overview</h3>
                     <div className="overview-meta">
                       <div>
-                        <p className="label">Domain</p>
-                        <p>{selectedStudent.domain}</p>
-                      </div>
-                      <div>
-                        <p className="label">Guide</p>
-                        <p>{selectedStudent.guide}</p>
-                      </div>
-                      <div>
                         <p className="label">Branch</p>
                         <p>{selectedStudent.branch}</p>
+                      </div>
+                      <div>
+                        <p className="label">Year</p>
+                        <p>{selectedStudent.year || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="label">Email</p>
+                        <p>{selectedStudent.email}</p>
                       </div>
                       <div>
                         <p className="label">Status</p>
@@ -988,20 +973,22 @@ const TeacherDashboard = () => {
                   <div className="timeline-card">
                     <h3>Timeline</h3>
                     <div className="timeline-horizontal">
-                      {selectedStudent.timeline.map(item => (
+                      {selectedStudent.timeline ? selectedStudent.timeline.map(item => (
                         <div key={item.label} className={`timeline-node ${item.status}`}>
                           <span className="timeline-dot"></span>
                           <p>{item.label}</p>
                           <small>{item.date}</small>
                         </div>
-                      ))}
+                      )) : (
+                        <p className="muted">Timeline data not available for this student.</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="documents-card">
                     <h3>Document Viewer</h3>
                     <div className="document-grid">
-                      {selectedStudent.documents.map(doc => (
+                      {selectedStudent.documents ? selectedStudent.documents.map(doc => (
                         <div key={doc.name} className="document-card">
                           <div className="document-icon">{renderDocumentIcon(doc.type)}</div>
                           <div>
@@ -1017,7 +1004,9 @@ const TeacherDashboard = () => {
                             </button>
                           </div>
                         </div>
-                      ))}
+                      )) : (
+                        <p className="muted">No documents uploaded yet.</p>
+                      )}
                     </div>
                   </div>
 

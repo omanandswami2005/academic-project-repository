@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Lock, Eye, EyeOff } from 'lucide-react'
-import axios from 'axios'
+import { authAPI } from '../../services/api'
+import toast from 'react-hot-toast'
 import './LoginPage.css'
 
 const ResetPassword = () => {
@@ -37,25 +38,22 @@ const ResetPassword = () => {
     }
 
     // Validate password strength
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long.')
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long.')
       setLoading(false)
       return
     }
 
     try {
-      const response = await axios.post(`http://localhost:5000/reset-password/${token}`, {
-        password: formData.password
-      })
-
-      if (response.status === 200) {
-        setMessage('Password has been reset successfully! Redirecting to login...')
-        setTimeout(() => {
-          navigate('/role-selection?action=login')
-        }, 2000)
-      }
+      await authAPI.resetPassword(token, formData.password)
+      setMessage('Password has been reset successfully! Redirecting to login...')
+      toast.success('Password reset successful!')
+      setTimeout(() => {
+        navigate('/role-selection?action=login')
+      }, 2000)
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred. The reset link may be invalid or expired.')
+      toast.error(err.response?.data?.message || 'Reset failed.')
     } finally {
       setLoading(false)
     }
@@ -76,7 +74,7 @@ const ResetPassword = () => {
           <ArrowLeft size={20} />
           Back
         </button>
-        
+
         <div className="login-header">
           <h1 className="login-title">Reset Password</h1>
           <p className="login-subtitle">Enter your new password</p>
@@ -161,8 +159,8 @@ const ResetPassword = () => {
             </div>
           )}
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="login-button glow-effect"
             disabled={loading || !token}
           >

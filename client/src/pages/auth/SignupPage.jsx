@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Mail, Lock, User, Hash, Building2, Calendar, Briefcase, Eye, EyeOff } from 'lucide-react'
-import axios from 'axios'; // 1. Added Axios Import
+import { authAPI } from '../../services/api'
+import toast from 'react-hot-toast'
 import './SignupPage.css'
 
 const SignupPage = () => {
@@ -9,9 +10,10 @@ const SignupPage = () => {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  
+  const [loading, setLoading] = useState(false)
+
   const [formData, setFormData] = useState({
-    name: '', // This will be sent as 'username' to your server
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -33,35 +35,39 @@ const SignupPage = () => {
     expert: 'Industry Expert Signup'
   }
 
-  // 2. UPDATED HANDLE SUBMIT WITH AXIOS
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Client-side validation
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!')
+      toast.error('Passwords do not match!')
       return
     }
 
+    if (formData.password.length < 8) {
+      toast.error('Password must be at least 8 characters long.')
+      return
+    }
+
+    setLoading(true)
+
     try {
-      // We map 'name' from your form to 'username' which your server expects
       const dataToSend = {
         username: formData.name,
         email: formData.email,
         password: formData.password,
-        role: role, // Good practice to send the role too
-        branch: formData.branch || null, // Include branch for students
-      };
-
-      const response = await axios.post('http://localhost:5000/signup', dataToSend);
-
-      if (response.status === 201 || response.status === 200) {
-        alert('Account created successfully!');
-        navigate(`/login/${role}`);
+        role: role,
+        branch: formData.branch || undefined,
+        prn: formData.rollNo || undefined,
+        year: formData.year || undefined,
       }
+
+      await authAPI.signup(dataToSend)
+      toast.success('Account created successfully!')
+      navigate(`/login/${role}`)
     } catch (error) {
-      console.error("Signup Error:", error);
-      alert(error.response?.data?.message || "Error signing up. Is the server running?");
+      toast.error(error.response?.data?.message || 'Error signing up. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -80,7 +86,7 @@ const SignupPage = () => {
           <ArrowLeft size={20} />
           Back
         </button>
-        
+
         <div className="signup-header">
           <h1 className="signup-title">{roleTitles[role] || 'Sign Up'}</h1>
           <p className="signup-subtitle">Create your account to get started</p>
@@ -149,6 +155,13 @@ const SignupPage = () => {
                     {branches.map(b => <option key={b} value={b}>{b}</option>)}
                   </select>
                 </div>
+                <div className="form-group">
+                  <label className="form-label"><Calendar size={18} /> Year</label>
+                  <select name="year" className="form-input neumorphic-inset" onChange={handleChange} required>
+                    <option value="">Select Year</option>
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
               </div>
             </>
           )}
@@ -188,8 +201,8 @@ const SignupPage = () => {
             </div>
           </div>
 
-          <button type="submit" className="signup-button glow-effect">
-            Create Account
+          <button type="submit" className="signup-button glow-effect" disabled={loading}>
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 

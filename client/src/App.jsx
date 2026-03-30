@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import LandingPage from './pages/common/LandingPage'
 import RoleSelection from './pages/common/RoleSelection'
 import LoginPage from './pages/auth/LoginPage'
@@ -12,27 +12,31 @@ import HelpPage from './pages/common/HelpPage'
 import HomeDashboard from './pages/dashboards/HomeDashboard'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
+import ProtectedRoute from './components/auth/ProtectedRoute'
+import NotFound from './pages/common/NotFound'
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/role-selection" element={<RoleSelection />} />
-        <Route path="/login/:role" element={<LoginPage />} />
-        <Route path="/signup/:role" element={<SignupPage />} />
-        <Route path="/teacher" element={<TeacherDashboard />} />
-        <Route path="/teacher/branches" element={<BranchSelection />} />
-        <Route path="/student" element={<StudentDashboard />} />
-        <Route path="/expert" element={<IndustryExpertDashboard />} />
-        <Route path="/home" element={<HomeDashboard />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/help" element={<HelpPage />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+    <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/role-selection" element={<RoleSelection />} />
+      <Route path="/login/:role" element={<LoginPage />} />
+      <Route path="/signup/:role" element={<SignupPage />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+      {/* Protected routes */}
+      <Route path="/teacher" element={<ProtectedRoute allowedRoles={['teacher', 'admin']}><TeacherDashboard /></ProtectedRoute>} />
+      <Route path="/teacher/branches" element={<ProtectedRoute allowedRoles={['teacher', 'admin']}><BranchSelection /></ProtectedRoute>} />
+      <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><StudentDashboard /></ProtectedRoute>} />
+      <Route path="/expert" element={<ProtectedRoute allowedRoles={['expert']}><IndustryExpertDashboard /></ProtectedRoute>} />
+      <Route path="/home" element={<ProtectedRoute allowedRoles={['student', 'teacher', 'expert', 'admin']}><HomeDashboard /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute allowedRoles={['student', 'teacher', 'expert', 'admin']}><ProfilePage /></ProtectedRoute>} />
+      <Route path="/help" element={<ProtectedRoute allowedRoles={['student', 'teacher', 'expert', 'admin']}><HelpPage /></ProtectedRoute>} />
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   )
 }
 

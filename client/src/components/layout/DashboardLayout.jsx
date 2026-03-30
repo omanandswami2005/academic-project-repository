@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -11,33 +11,32 @@ import {
   Sun,
   User
 } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { notificationAPI } from '../../services/api'
 import './DashboardLayout.css'
-
-const notificationSeed = [
-  { id: 'nt1', message: 'Teacher reviewed your Synopsis draft.', time: '2m ago' },
-  { id: 'nt2', message: 'Upload confirmed: Implementation Logs.zip', time: '1h ago' },
-  { id: 'nt3', message: 'Announcement: Final jury on 10 Apr.', time: 'Yesterday' }
-]
 
 const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('rscoe-theme') === 'dark')
   const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [user, setUser] = useState(null)
 
-  // Get user from localStorage
-  useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData))
-      } catch (e) {
-        console.error('Error parsing user data:', e)
-      }
+  // Fetch real notifications
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const { data } = await notificationAPI.getAll({ limit: 10 })
+      setNotifications(data.notifications || [])
+    } catch {
+      // Silently fail if notifications endpoint not ready
     }
   }, [])
+
+  useEffect(() => {
+    fetchNotifications()
+  }, [fetchNotifications])
 
   const baseSegment = location.pathname.split('/')[1] || ''
   const dashboardSegments = ['teacher', 'student', 'expert']
@@ -79,11 +78,12 @@ const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => 
     alert(`Searching for "${searchTerm}" across students, projects, and documents.`)
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (onLogout) {
       onLogout()
       return
     }
+    await logout()
     navigate('/')
   }
 
@@ -139,12 +139,18 @@ const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => 
           </button>
           {showNotifications && (
             <div className="global-notifications">
-              {notificationSeed.map(item => (
-                <div key={item.id} className="notification-row">
-                  <p>{item.message}</p>
-                  <span>{item.time}</span>
+              {notifications.length === 0 ? (
+                <div className="notification-row">
+                  <p>No notifications yet</p>
                 </div>
-              ))}
+              ) : (
+                notifications.map(item => (
+                  <div key={item.id} className="notification-row">
+                    <p>{item.message}</p>
+                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>

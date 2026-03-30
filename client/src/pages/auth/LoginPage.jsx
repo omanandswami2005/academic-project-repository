@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react'
-import axios from 'axios' // 1. Added Axios Import
+import { useAuth } from '../../context/AuthContext'
+import toast from 'react-hot-toast'
 import './LoginPage.css'
 
 const LoginPage = () => {
   const { role } = useParams()
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   })
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const roleTitles = {
     student: 'Student Login',
@@ -19,41 +22,28 @@ const LoginPage = () => {
     expert: 'Industry Expert Login'
   }
 
-  // 2. UPDATED HANDLE SUBMIT WITH BACKEND INTEGRATION
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+    setLoading(true)
+
     try {
-      // Sending login request to the server with role verification
-      const response = await axios.post('http://localhost:5000/login', {
-        email: formData.email,
-        password: formData.password,
-        role: role // Send role for verification
-      });
+      const data = await login(formData.email, formData.password, role)
+      toast.success('Login Successful!')
 
-      if (response.status === 200) {
-        // Save user data in browser memory so you stay logged in
-        const userData = response.data.user;
-        localStorage.setItem('user', JSON.stringify(userData));
-        
-        alert('Login Successful!');
-
-        // 3. Redirect based on user's actual role from database
-        const userRole = userData.role || role; // Fallback to URL param if not in response
-        if (userRole === 'student') {
-          navigate('/student')
-        } else if (userRole === 'teacher') {
-          navigate('/teacher/branches')
-        } else if (userRole === 'expert') {
-          navigate('/expert')
-        } else {
-          navigate('/role-selection?action=login')
-        }
+      const userRole = data.user.role || role
+      if (userRole === 'student') {
+        navigate('/student')
+      } else if (userRole === 'teacher') {
+        navigate('/teacher/branches')
+      } else if (userRole === 'expert') {
+        navigate('/expert')
+      } else {
+        navigate('/home')
       }
     } catch (error) {
-      console.error("Login Error:", error);
-      // Show the specific error from the server (e.g., "User does not exist")
-      alert(error.response?.data?.message || "Login failed. Check your connection.");
+      toast.error(error.response?.data?.message || 'Login failed. Check your credentials.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -76,7 +66,7 @@ const LoginPage = () => {
           <ArrowLeft size={20} />
           Back
         </button>
-        
+
         <div className="login-header">
           <h1 className="login-title">{roleTitles[role] || 'Login'}</h1>
           <p className="login-subtitle">Enter your credentials to continue</p>
@@ -136,8 +126,8 @@ const LoginPage = () => {
             </button>
           </div>
 
-          <button type="submit" className="login-button glow-effect">
-            Sign In
+          <button type="submit" className="login-button glow-effect" disabled={loading}>
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 

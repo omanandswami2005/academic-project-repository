@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const checkDBConnection = require('../middleware/checkDB');
-const { getStudentsByBranch, getAllStudents } = require('../controllers/student.controller');
+const { authenticate } = require('../middleware/auth.middleware');
+const { authorize } = require('../middleware/role.middleware');
+const { getStudentsByBranch, getAllStudents, getStudentSkills } = require('../controllers/student.controller');
 
-router.get('/', checkDBConnection, getAllStudents);
-router.get('/branch/:branch', checkDBConnection, getStudentsByBranch);
+router.get('/', authenticate, authorize('teacher', 'admin', 'expert'), getAllStudents);
+router.get('/branch/:branch', authenticate, authorize('teacher', 'admin'), getStudentsByBranch);
+router.get('/:id/skills', authenticate, getStudentSkills);
 
 module.exports = router;

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Mail } from 'lucide-react'
-import axios from 'axios'
+import { authAPI } from '../../services/api'
+import toast from 'react-hot-toast'
 import './LoginPage.css'
 
 const ForgotPassword = () => {
@@ -16,15 +17,12 @@ const ForgotPassword = () => {
     setMessage('')
 
     try {
-      const response = await axios.post('http://localhost:5000/forgot-password', {
-        email: email
-      })
-
-      if (response.status === 200) {
-        setMessage(response.data.message || 'If an account with that email exists, a password reset link has been sent.')
-      }
+      const response = await authAPI.forgotPassword(email)
+      setMessage(response.data.message || 'If an account with that email exists, a password reset link has been sent.')
+      toast.success('Reset link sent! Check your email.')
     } catch (error) {
       setMessage(error.response?.data?.message || 'An error occurred. Please try again.')
+      toast.error(error.response?.data?.message || 'An error occurred.')
     } finally {
       setLoading(false)
     }
@@ -38,7 +36,7 @@ const ForgotPassword = () => {
           <ArrowLeft size={20} />
           Back
         </button>
-        
+
         <div className="login-header">
           <h1 className="login-title">Forgot Password</h1>
           <p className="login-subtitle">Enter your email address and we'll send you a link to reset your password</p>
@@ -75,8 +73,8 @@ const ForgotPassword = () => {
             </div>
           )}
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="login-button glow-effect"
             disabled={loading}
           >

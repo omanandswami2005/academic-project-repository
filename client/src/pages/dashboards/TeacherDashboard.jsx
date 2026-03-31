@@ -246,8 +246,8 @@ const reviewQueueData = [
   {
     id: 'rq1',
     icon: UploadCloud,
-    iconBg: 'rgba(65, 105, 225, 0.12)',
-    iconColor: '#4169E1',
+    iconBg: 'rgba(59, 130, 246, 0.12)',
+    iconColor: '#3b82f6',
     category: 'New Upload',
     student: 'Aarav Patil',
     branch: 'CSE',
@@ -478,8 +478,8 @@ const TeacherDashboard = () => {
       .map(p => ({
         id: p.id,
         icon: p.status === 'pending' ? UploadCloud : FileText,
-        iconBg: p.status === 'pending' ? 'rgba(65, 105, 225, 0.12)' : 'rgba(139, 92, 246, 0.12)',
-        iconColor: p.status === 'pending' ? '#4169E1' : '#8b5cf6',
+        iconBg: p.status === 'pending' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(139, 92, 246, 0.12)',
+        iconColor: p.status === 'pending' ? '#3b82f6' : '#8b5cf6',
         category: p.status === 'pending' ? 'New Upload' : 'Under Review',
         student: p.studentName || 'Unknown',
         branch: p.studentBranch || selectedBranch,
@@ -604,7 +604,7 @@ const TeacherDashboard = () => {
       onLogout={handleLogout}
     >
       <div className="teacher-dashboard">
-        <aside className="sidebar neumorphic">
+        <aside className="sidebar">
           <div className="sidebar-header">
             <h2>RSCOE</h2>
             <p>Teacher Portal</p>

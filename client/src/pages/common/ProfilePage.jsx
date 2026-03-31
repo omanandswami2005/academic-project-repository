@@ -201,145 +201,76 @@ const ProfilePage = () => {
 
       {/* Password Change Modal */}
       {showPasswordModal && (
-        <div className="modal-overlay" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div className="modal-content" style={{
-            backgroundColor: 'var(--bg-primary)',
-            padding: '24px',
-            borderRadius: '12px',
-            width: '90%',
-            maxWidth: '500px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0 }}>Change Password</h2>
+        <div className="password-modal-overlay">
+          <div className="password-modal">
+            <div className="password-modal-header">
+              <h2>Change Password</h2>
               <button
                 type="button"
+                className="btn-icon"
                 onClick={() => {
                   setShowPasswordModal(false)
                   setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
                   setPasswordError('')
                   setPasswordMessage('')
                 }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
               >
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleUpdatePassword}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                  Current Password
-                </label>
-                <div style={{ position: 'relative' }}>
+              <div className="password-field">
+                <label>Current Password</label>
+                <div className="password-input-wrap">
                   <input
                     type={showPasswords.current ? 'text' : 'password'}
                     value={passwordData.currentPassword}
                     onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 40px 10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      fontSize: '14px'
-                    }}
                     required
                   />
                   <button
                     type="button"
+                    className="toggle-vis"
                     onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
-                    style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer'
-                    }}
                   >
                     {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                  New Password
-                </label>
-                <div style={{ position: 'relative' }}>
+              <div className="password-field">
+                <label>New Password</label>
+                <div className="password-input-wrap">
                   <input
                     type={showPasswords.new ? 'text' : 'password'}
                     value={passwordData.newPassword}
                     onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 40px 10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      fontSize: '14px'
-                    }}
                     required
                   />
                   <button
                     type="button"
+                    className="toggle-vis"
                     onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
-                    style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer'
-                    }}
                   >
                     {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                  Confirm New Password
-                </label>
-                <div style={{ position: 'relative' }}>
+              <div className="password-field">
+                <label>Confirm New Password</label>
+                <div className="password-input-wrap">
                   <input
                     type={showPasswords.confirm ? 'text' : 'password'}
                     value={passwordData.confirmPassword}
                     onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 40px 10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      fontSize: '14px'
-                    }}
                     required
                   />
                   <button
                     type="button"
+                    className="toggle-vis"
                     onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
-                    style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer'
-                    }}
                   >
                     {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -347,62 +278,30 @@ const ProfilePage = () => {
               </div>
 
               {passwordError && (
-                <div style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  marginBottom: '16px',
-                  backgroundColor: '#fee',
-                  color: '#c33',
-                  fontSize: '14px'
-                }}>
-                  {passwordError}
-                </div>
+                <div className="password-msg error">{passwordError}</div>
               )}
 
               {passwordMessage && (
-                <div style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  marginBottom: '16px',
-                  backgroundColor: '#efe',
-                  color: '#3c3',
-                  fontSize: '14px'
-                }}>
-                  {passwordMessage}
-                </div>
+                <div className="password-msg success">{passwordMessage}</div>
               )}
 
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <div className="password-modal-actions">
                 <button
                   type="button"
+                  className="btn btn-secondary"
                   onClick={() => {
                     setShowPasswordModal(false)
                     setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
                     setPasswordError('')
                     setPasswordMessage('')
                   }}
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-color)',
-                    background: 'transparent',
-                    cursor: 'pointer'
-                  }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  className="btn btn-primary"
                   disabled={loading}
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: '#4169E1',
-                    color: 'white',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    opacity: loading ? 0.6 : 1
-                  }}
                 >
                   {loading ? 'Updating...' : 'Update Password'}
                 </button>

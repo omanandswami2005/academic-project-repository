@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const logger = require('./utils/logger');
+const requestLogger = require('./middleware/requestLogger');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -15,6 +17,9 @@ const fileRoutes = require('./routes/file.routes');
 
 const app = express();
 
+// ─── Request Logging ───
+app.use(requestLogger);
+
 // ─── Security Middleware ───
 app.use(helmet());
 
@@ -27,6 +32,7 @@ app.use(cors({
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
+        logger.warn('CORS', `Blocked request from origin: ${origin}`);
         return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
@@ -66,6 +72,7 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // ─── Health Check ───
 app.get('/health', (req, res) => {
+    logger.info('HEALTH', 'Health check ping');
     res.status(200).json({
         status: 'Server is running',
         timestamp: new Date().toISOString(),
@@ -84,15 +91,17 @@ app.use('/api/files', uploadLimiter, fileRoutes);
 
 // ─── 404 Handler ───
 app.use((req, res) => {
+    logger.warn('ROUTER', `Route not found: ${req.method} ${req.originalUrl}`);
     res.status(404).json({ message: 'Route not found.' });
 });
 
 // ─── Error Handler ───
 app.use((err, req, res, next) => {
-    console.error('Unhandled Error:', err);
     if (err.message === 'Not allowed by CORS') {
+        logger.warn('CORS', `Policy violation — ${req.method} ${req.originalUrl}`);
         return res.status(403).json({ message: 'CORS policy violation.' });
     }
+    logger.error('SERVER', `Unhandled error on ${req.method} ${req.originalUrl}`, err);
     res.status(500).json({ message: 'Internal Server Error.' });
 });
 

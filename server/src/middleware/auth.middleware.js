@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-do-not-use-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
@@ -27,6 +28,7 @@ function verifyRefreshToken(token) {
 function authenticate(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        logger.warn('AUTH', `Missing or malformed token — ${req.method} ${req.originalUrl}`);
         return res.status(401).json({ message: 'Authentication required. Please provide a valid token.' });
     }
 
@@ -34,11 +36,14 @@ function authenticate(req, res, next) {
     try {
         const decoded = verifyAccessToken(token);
         req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
+        logger.debug('AUTH', `Token verified for ${decoded.email} (${decoded.role})`);
         next();
     } catch (err) {
         if (err.name === 'TokenExpiredError') {
+            logger.warn('AUTH', `Expired token used by — ${req.originalUrl}`);
             return res.status(401).json({ message: 'Token expired. Please refresh your token.' });
         }
+        logger.warn('AUTH', `Invalid token on ${req.method} ${req.originalUrl} — ${err.message}`);
         return res.status(401).json({ message: 'Invalid token.' });
     }
 }

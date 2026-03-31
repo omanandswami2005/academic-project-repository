@@ -1,4 +1,5 @@
 const { Resend } = require('resend');
+const logger = require('./logger');
 
 // Lazy-init Resend client — only fails at send time if key is missing
 let resendClient = null;
@@ -21,8 +22,7 @@ const getResend = () => {
 const sendResetEmail = async (user, resetToken) => {
     const resend = getResend();
     if (!resend) {
-        console.error('❌ Email not configured: set RESEND_API_KEY in server/.env');
-        console.error('   Sign up free at https://resend.com → API Keys → Create Key');
+        logger.warn('MAIL', 'Email not configured — set RESEND_API_KEY in server/.env');
         return { success: false, error: 'Email service is not configured.' };
     }
 
@@ -31,7 +31,7 @@ const sendResetEmail = async (user, resetToken) => {
     const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
     try {
-        console.log(`📧 Sending password reset email to: ${user.email}`);
+        logger.mail(`Sending password reset email to: ${user.email}`);
         const { data, error } = await resend.emails.send({
             from: `APRS System <${fromEmail}>`,
             to: [user.email],
@@ -61,14 +61,14 @@ const sendResetEmail = async (user, resetToken) => {
         });
 
         if (error) {
-            console.error('❌ Resend error:', error);
+            logger.error('MAIL', `Resend API error for ${user.email}`, error);
             return { success: false, error: error.message };
         }
 
-        console.log(`✅ Password reset email sent! ID: ${data.id}`);
+        logger.mail(`Password reset email sent to ${user.email}`, `id=${data.id}`);
         return { success: true };
     } catch (err) {
-        console.error('❌ Email send failed:', err.message);
+        logger.error('MAIL', `Email send failed for ${user.email}`, err);
         return { success: false, error: err.message };
     }
 };

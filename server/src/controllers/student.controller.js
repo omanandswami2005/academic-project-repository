@@ -1,6 +1,7 @@
 const { eq, and, desc, count } = require('drizzle-orm');
 const { getDB } = require('../config/db');
 const { users, projects, projectPhases, feedback } = require('../db/schema');
+const logger = require('../utils/logger');
 
 /**
  * GET /api/students/branch/:branch
@@ -63,7 +64,7 @@ const getStudentsByBranch = async (req, res) => {
             students: studentsWithProjects,
         });
     } catch (error) {
-        console.error('Get Students by Branch Error:', error);
+        logger.error('STUDENT', `Get students by branch=${req.params.branch} failed`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -92,7 +93,7 @@ const getAllStudents = async (req, res) => {
             students,
         });
     } catch (error) {
-        console.error('Get Students Error:', error);
+        logger.error('STUDENT', 'Get all students failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -151,7 +152,7 @@ const getStudentSkills = async (req, res) => {
             totalProjects: studentProjects.length,
         });
     } catch (error) {
-        console.error('Get Student Skills Error:', error);
+        logger.error('STUDENT', `Get skills failed for student id=${req.params.id}`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };

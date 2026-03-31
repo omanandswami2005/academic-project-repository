@@ -1,6 +1,7 @@
 const { neon } = require('@neondatabase/serverless');
 const { drizzle } = require('drizzle-orm/neon-http');
 const schema = require('../db/schema');
+const logger = require('../utils/logger');
 
 let db = null;
 
@@ -20,10 +21,10 @@ async function testConnection() {
     try {
         const database = getDB();
         await database.execute('SELECT 1 as connected');
-        console.log('✅ Database connected successfully');
+        logger.db('Connected to Neon PostgreSQL database — ready');
         return true;
     } catch (err) {
-        console.error('❌ Database connection failed:', err.message);
+        logger.error('DB', 'Database connection failed', err);
         return false;
     }
 }

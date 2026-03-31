@@ -1,6 +1,7 @@
 const { eq, desc } = require('drizzle-orm');
 const { getDB } = require('../config/db');
 const { feedback, users, projects, notifications } = require('../db/schema');
+const logger = require('../utils/logger');
 
 /**
  * POST /api/feedback
@@ -14,6 +15,7 @@ const createFeedback = async (req, res) => {
         // Verify project exists
         const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
         if (!project) {
+            logger.warn('FEEDBACK', `Project id=${projectId} not found for feedback submission`);
             return res.status(404).json({ message: 'Project not found.' });
         }
 
@@ -33,12 +35,13 @@ const createFeedback = async (req, res) => {
             type: 'info',
         });
 
+        logger.success('FEEDBACK', `Feedback submitted on project id=${projectId} by reviewer id=${reviewerId}`, `rating=${rating}`);
         res.status(201).json({
             message: 'Feedback submitted successfully',
             feedback: newFeedback,
         });
     } catch (error) {
-        console.error('Create Feedback Error:', error);
+        logger.error('FEEDBACK', 'Create feedback failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -70,7 +73,7 @@ const getFeedbackByProject = async (req, res) => {
             feedback: feedbackList,
         });
     } catch (error) {
-        console.error('Get Feedback Error:', error);
+        logger.error('FEEDBACK', `Get feedback failed for project id=${req.params.projectId}`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };

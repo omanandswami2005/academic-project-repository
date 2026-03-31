@@ -9,6 +9,7 @@ const {
     generateRefreshToken,
     verifyRefreshToken,
 } = require('../middleware/auth.middleware');
+const logger = require('../utils/logger');
 
 /**
  * POST /api/auth/signup
@@ -20,6 +21,7 @@ const signup = async (req, res) => {
 
         const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
         if (existing.length > 0) {
+            logger.warn('AUTH', `Signup rejected — email already exists: ${email}`);
             return res.status(400).json({ message: 'User with this email already exists.' });
         }
 
@@ -42,12 +44,13 @@ const signup = async (req, res) => {
             branch: users.branch,
         });
 
+        logger.auth(`New user registered: ${newUser.email} (${newUser.role})`, `id=${newUser.id}`);
         res.status(201).json({
             message: 'Account created successfully!',
             user: newUser,
         });
     } catch (error) {
-        console.error('Signup Error:', error);
+        logger.error('AUTH', 'Signup failed', error);
         if (error.code === '23505') {
             return res.status(400).json({ message: 'Email already exists.' });
         }
@@ -65,10 +68,12 @@ const login = async (req, res) => {
 
         const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
         if (!user) {
+            logger.warn('AUTH', `Login failed — user not found: ${email}`);
             return res.status(400).json({ message: 'User not found. Please check your email.' });
         }
 
         if (role && user.role !== role) {
+            logger.warn('AUTH', `Login denied — role mismatch for ${email}: expected ${role}, got ${user.role}`);
             return res.status(403).json({
                 message: `Access denied. This account is registered as ${user.role}, not ${role}.`,
             });
@@ -76,6 +81,7 @@ const login = async (req, res) => {
 
         const isMatch = await bcrypt.compare(password, user.passwordHash);
         if (!isMatch) {
+            logger.warn('AUTH', `Login failed — wrong password for ${email}`);
             return res.status(400).json({ message: 'Incorrect password. Please try again.' });
         }
 
@@ -91,6 +97,7 @@ const login = async (req, res) => {
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         });
 
+        logger.auth(`User logged in: ${user.email} (${user.role})`, `id=${user.id}`);
         res.status(200).json({
             message: 'Login Successful!',
             accessToken,
@@ -104,7 +111,7 @@ const login = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error('Login Error:', error);
+        logger.error('AUTH', 'Login failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -121,6 +128,7 @@ const refresh = async (req, res) => {
         try {
             decoded = verifyRefreshToken(tokenValue);
         } catch (err) {
+            logger.warn('AUTH', `Refresh token invalid or expired — ${err.message}`);
             return res.status(401).json({ message: 'Invalid or expired refresh token.' });
         }
 
@@ -134,6 +142,7 @@ const refresh = async (req, res) => {
             .limit(1);
 
         if (!stored) {
+            logger.warn('AUTH', `Refresh token not found in DB for user id=${decoded.id}`);
             return res.status(401).json({ message: 'Refresh token not found or expired.' });
         }
 
@@ -152,12 +161,13 @@ const refresh = async (req, res) => {
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         });
 
+        logger.auth(`Tokens refreshed for user id=${decoded.id}`);
         res.status(200).json({
             accessToken: newAccessToken,
             refreshToken: newRefreshToken,
         });
     } catch (error) {
-        console.error('Refresh Error:', error);
+        logger.error('AUTH', 'Token refresh failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -175,9 +185,10 @@ const logout = async (req, res) => {
             await db.delete(refreshTokens).where(eq(refreshTokens.tokenHash, tokenHash));
         }
 
+        logger.auth(`User logged out`, req.user ? `id=${req.user.id}` : 'anonymous');
         res.status(200).json({ message: 'Logged out successfully.' });
     } catch (error) {
-        console.error('Logout Error:', error);
+        logger.error('AUTH', 'Logout failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -198,6 +209,7 @@ const updatePassword = async (req, res) => {
 
         const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
         if (!isMatch) {
+            logger.warn('AUTH', `Password update rejected — wrong current password for id=${userId}`);
             return res.status(400).json({ message: 'Current password is incorrect.' });
         }
 
@@ -207,9 +219,10 @@ const updatePassword = async (req, res) => {
         // Invalidate all refresh tokens for this user
         await db.delete(refreshTokens).where(eq(refreshTokens.userId, userId));
 
+        logger.auth(`Password updated for user id=${userId}`);
         res.status(200).json({ message: 'Password updated successfully!' });
     } catch (error) {
-        console.error('Update Password Error:', error);
+        logger.error('AUTH', 'Password update failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -241,14 +254,16 @@ const forgotPassword = async (req, res) => {
 
         const result = await sendResetEmail({ username: user.username, email: user.email }, resetToken);
         if (!result.success) {
-            console.error('Email send failed:', result.error);
+            logger.error('MAIL', `Password reset email failed for ${user.email}`, result.error);
+        } else {
+            logger.mail(`Password reset email sent to ${user.email}`);
         }
 
         res.status(200).json({
             message: 'If an account with that email exists, a password reset link has been sent.',
         });
     } catch (error) {
-        console.error('Forgot Password Error:', error);
+        logger.error('AUTH', 'Forgot password request failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -273,6 +288,7 @@ const resetPassword = async (req, res) => {
             .limit(1);
 
         if (!user) {
+            logger.warn('AUTH', 'Password reset attempted with invalid or expired token');
             return res.status(400).json({ message: 'Invalid or expired reset token.' });
         }
 
@@ -288,9 +304,10 @@ const resetPassword = async (req, res) => {
         // Invalidate all refresh tokens
         await db.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
 
+        logger.auth(`Password reset successful for user id=${user.id}`);
         res.status(200).json({ message: 'Password has been reset successfully!' });
     } catch (error) {
-        console.error('Reset Password Error:', error);
+        logger.error('AUTH', 'Password reset failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };

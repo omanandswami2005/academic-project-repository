@@ -1,6 +1,7 @@
 const { eq, desc, and } = require('drizzle-orm');
 const { getDB } = require('../config/db');
 const { notifications } = require('../db/schema');
+const logger = require('../utils/logger');
 
 /**
  * GET /api/notifications
@@ -25,7 +26,7 @@ const getNotifications = async (req, res) => {
             notifications: notificationList,
         });
     } catch (error) {
-        console.error('Get Notifications Error:', error);
+        logger.error('NOTIF', 'Get notifications failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -47,12 +48,13 @@ const markAsRead = async (req, res) => {
             .returning();
 
         if (!updated) {
+            logger.warn('NOTIF', `Notification id=${notificationId} not found for user id=${req.user.id}`);
             return res.status(404).json({ message: 'Notification not found.' });
         }
 
         res.status(200).json({ message: 'Notification marked as read.' });
     } catch (error) {
-        console.error('Mark Read Error:', error);
+        logger.error('NOTIF', 'Mark as read failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -72,7 +74,7 @@ const markAllAsRead = async (req, res) => {
 
         res.status(200).json({ message: 'All notifications marked as read.' });
     } catch (error) {
-        console.error('Mark All Read Error:', error);
+        logger.error('NOTIF', 'Mark all as read failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };

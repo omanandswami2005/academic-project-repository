@@ -1,4 +1,5 @@
 const { S3Client } = require('@aws-sdk/client-s3');
+const logger = require('../utils/logger');
 
 let r2Client = null;
 
@@ -9,7 +10,7 @@ function getR2Client() {
         const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 
         if (!accountId || !accessKeyId || !secretAccessKey) {
-            console.warn('⚠️  R2 credentials not configured. File uploads will be disabled.');
+            logger.warn('R2', 'Credentials not configured — file uploads will be disabled');
             return null;
         }
 

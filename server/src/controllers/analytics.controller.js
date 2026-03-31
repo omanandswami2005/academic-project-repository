@@ -1,6 +1,7 @@
 const { eq, desc, count, avg, sql, inArray } = require('drizzle-orm');
 const { getDB } = require('../config/db');
 const { users, projects, projectPhases, feedback } = require('../db/schema');
+const logger = require('../utils/logger');
 
 /**
  * GET /api/analytics/skills/:userId
@@ -49,7 +50,7 @@ const getSkillRadar = async (req, res) => {
             totalProjects: studentProjects.length,
         });
     } catch (error) {
-        console.error('Get Skill Radar Error:', error);
+        logger.error('ANALYTICS', `Skill radar failed for user id=${req.params.userId}`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -114,7 +115,7 @@ const getDepartmentStats = async (req, res) => {
             })),
         });
     } catch (error) {
-        console.error('Get Dept Stats Error:', error);
+        logger.error('ANALYTICS', `Department stats failed for branch=${req.params.branch}`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -189,7 +190,7 @@ const getTopStudents = async (req, res) => {
             domain: domain || 'all',
         });
     } catch (error) {
-        console.error('Get Top Students Error:', error);
+        logger.error('ANALYTICS', 'Get top students failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };

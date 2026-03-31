@@ -2,6 +2,7 @@ const { eq } = require('drizzle-orm');
 const { getDB } = require('../config/db');
 const { projectFiles, projects } = require('../db/schema');
 const { uploadToR2, getDownloadUrl, deleteFromR2 } = require('../middleware/upload');
+const logger = require('../utils/logger');
 
 /**
  * POST /api/files/upload
@@ -43,12 +44,13 @@ const uploadFile = async (req, res) => {
             uploaded.push(fileRecord);
         }
 
+        logger.file(`${uploaded.length} file(s) uploaded to project id=${pid}`, `user=${req.user.id}`);
         res.status(201).json({
             message: 'Files uploaded successfully',
             files: uploaded,
         });
     } catch (error) {
-        console.error('Upload File Error:', error);
+        logger.error('FILE', 'Upload failed', error);
         res.status(500).json({ message: error.message || 'Internal Server Error.' });
     }
 };
@@ -83,7 +85,7 @@ const getFileUrl = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error('Get File URL Error:', error);
+        logger.error('FILE', `Get download URL failed for key=${req.params.key}`, error);
         res.status(500).json({ message: error.message || 'Internal Server Error.' });
     }
 };
@@ -115,9 +117,10 @@ const deleteFile = async (req, res) => {
         await deleteFromR2(fullKey);
         await db.delete(projectFiles).where(eq(projectFiles.id, file.id));
 
+        logger.file(`File deleted: ${r2Key}`, `user=${req.user.id}`);
         res.status(200).json({ message: 'File deleted successfully.' });
     } catch (error) {
-        console.error('Delete File Error:', error);
+        logger.error('FILE', `Delete failed for key=${req.params.key}`, error);
         res.status(500).json({ message: error.message || 'Internal Server Error.' });
     }
 };

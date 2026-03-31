@@ -1,6 +1,7 @@
 const { eq } = require('drizzle-orm');
 const { getDB } = require('../config/db');
 const { users } = require('../db/schema');
+const logger = require('../utils/logger');
 
 /**
  * GET /api/users/me
@@ -26,12 +27,13 @@ const getProfile = async (req, res) => {
             .limit(1);
 
         if (!user) {
+            logger.warn('USER', `Profile not found for id=${req.user.id}`);
             return res.status(404).json({ message: 'User not found.' });
         }
 
         res.status(200).json({ user });
     } catch (error) {
-        console.error('Get Profile Error:', error);
+        logger.error('USER', 'Get profile failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -67,12 +69,13 @@ const updateProfile = async (req, res) => {
                 avatarUrl: users.avatarUrl,
             });
 
+        logger.success('USER', `Profile updated for id=${req.user.id}`);
         res.status(200).json({
             message: 'Profile updated successfully',
             user: updated,
         });
     } catch (error) {
-        console.error('Update Profile Error:', error);
+        logger.error('USER', 'Profile update failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -101,12 +104,13 @@ const getUserById = async (req, res) => {
             .limit(1);
 
         if (!user) {
+            logger.warn('USER', `User not found for id=${userId}`);
             return res.status(404).json({ message: 'User not found.' });
         }
 
         res.status(200).json({ user });
     } catch (error) {
-        console.error('Get User Error:', error);
+        logger.error('USER', `Get user by id failed for id=${req.params.id}`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };

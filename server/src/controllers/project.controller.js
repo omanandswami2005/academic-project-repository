@@ -2,6 +2,7 @@ const { eq, and, desc, ilike, or, sql, count } = require('drizzle-orm');
 const { getDB } = require('../config/db');
 const { projects, projectPhases, projectFiles, projectMembers, users } = require('../db/schema');
 const { uploadToR2, deleteFromR2 } = require('../middleware/upload');
+const logger = require('../utils/logger');
 
 const PHASE_NAMES = [
     'Idea & Proposal',
@@ -98,12 +99,13 @@ const createProject = async (req, res) => {
             }
         }
 
+        logger.success('PROJECT', `Project created: "${newProject.title}" [${uniqueProjectId}]`, `id=${newProject.id} user=${req.user.id}`);
         res.status(201).json({
             message: 'Project uploaded successfully!',
             project: { ...newProject, files: uploadedFiles },
         });
     } catch (error) {
-        console.error('Project Upload Error:', error);
+        logger.error('PROJECT', 'Create project failed', error);
         res.status(500).json({ message: 'Internal Server Error. Please try again.' });
     }
 };
@@ -196,7 +198,7 @@ const getAllProjects = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error('Get Projects Error:', error);
+        logger.error('PROJECT', 'Get all projects failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -233,7 +235,7 @@ const getProjectsByStudent = async (req, res) => {
             projects: projectsWithPhases,
         });
     } catch (error) {
-        console.error('Get Student Projects Error:', error);
+        logger.error('PROJECT', `Get projects for student id=${req.params.studentId} failed`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -296,7 +298,7 @@ const getProjectById = async (req, res) => {
             project: { ...project, phases, files, members },
         });
     } catch (error) {
-        console.error('Get Project Error:', error);
+        logger.error('PROJECT', `Get project id=${req.params.id} failed`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -331,12 +333,13 @@ const updateProject = async (req, res) => {
             .where(eq(projects.id, projectId))
             .returning();
 
+        logger.success('PROJECT', `Project id=${projectId} updated`, `user=${req.user.id}`);
         res.status(200).json({
             message: 'Project updated successfully',
             project: updated,
         });
     } catch (error) {
-        console.error('Update Project Error:', error);
+        logger.error('PROJECT', `Update project id=${req.params.id} failed`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -364,16 +367,17 @@ const deleteProject = async (req, res) => {
             try {
                 await deleteFromR2(file.r2Key);
             } catch (err) {
-                console.error(`Failed to delete R2 file ${file.r2Key}:`, err.message);
+                logger.warn('FILE', `Failed to delete R2 object: ${file.r2Key}`, err.message);
             }
         }
 
         // Cascade delete handled by DB constraints
         await db.delete(projects).where(eq(projects.id, projectId));
 
+        logger.success('PROJECT', `Project id=${projectId} deleted`, `user=${req.user.id}`);
         res.status(200).json({ message: 'Project deleted successfully.' });
     } catch (error) {
-        console.error('Delete Project Error:', error);
+        logger.error('PROJECT', `Delete project id=${req.params.id} failed`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -396,12 +400,13 @@ const updateProjectStatus = async (req, res) => {
             return res.status(404).json({ message: 'Project not found.' });
         }
 
+        logger.success('PROJECT', `Status of project id=${projectId} changed to "${status}"`);
         res.status(200).json({
             message: 'Project status updated successfully',
             project: updated,
         });
     } catch (error) {
-        console.error('Update Status Error:', error);
+        logger.error('PROJECT', `Update status for project id=${req.params.id} failed`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -456,13 +461,14 @@ const updateProjectPhase = async (req, res) => {
             .set({ stars: completedCount, updatedAt: new Date() })
             .where(eq(projects.id, projectId));
 
+        logger.success('PROJECT', `Phase ${phaseNumber} of project id=${projectId} updated`, `stars=${completedCount}`);
         res.status(200).json({
             message: 'Phase updated successfully',
             phase: updatedPhase,
             stars: completedCount,
         });
     } catch (error) {
-        console.error('Update Phase Error:', error);
+        logger.error('PROJECT', `Update phase for project id=${req.params.id} failed`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -511,13 +517,14 @@ const updateProjectPhases = async (req, res) => {
             .set({ stars: completedCount, updatedAt: new Date() })
             .where(eq(projects.id, projectId));
 
+        logger.success('PROJECT', `Bulk phases updated for project id=${projectId}`, `stars=${completedCount}`);
         res.status(200).json({
             message: 'Phases updated successfully',
             phases: allPhases,
             stars: completedCount,
         });
     } catch (error) {
-        console.error('Update Phases Error:', error);
+        logger.error('PROJECT', `Bulk update phases for project id=${req.params.id} failed`, error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };
@@ -579,7 +586,7 @@ const searchProjects = async (req, res) => {
             projects: filtered,
         });
     } catch (error) {
-        console.error('Search Projects Error:', error);
+        logger.error('PROJECT', 'Search projects failed', error);
         res.status(500).json({ message: 'Internal Server Error.' });
     }
 };

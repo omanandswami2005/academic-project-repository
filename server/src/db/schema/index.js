@@ -9,7 +9,7 @@ const users = pgTable('users', {
     passwordHash: text('password_hash').notNull(),
     role: varchar('role', { length: 20 }).notNull().default('student'), // student, teacher, expert, admin
     branch: varchar('branch', { length: 50 }),
-    prn: varchar('prn', { length: 50 }),
+    prn: varchar('prn', { length: 50 }).unique(),
     mobile: varchar('mobile', { length: 20 }),
     year: varchar('year', { length: 10 }),
     skills: jsonb('skills').default([]),
@@ -25,7 +25,9 @@ const users = pgTable('users', {
 ]);
 
 const usersRelations = relations(users, ({ many }) => ({
-    projects: many(projects),
+    projects: many(projects, {
+        references: [projects.studentId],
+    }),
     projectMembers: many(projectMembers),
     feedback: many(feedback),
     notifications: many(notifications),

@@ -13,16 +13,18 @@ import HomeDashboard from './pages/dashboards/HomeDashboard'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import PublicOnlyRoute from './components/auth/PublicOnlyRoute'
 import NotFound from './pages/common/NotFound'
 
 function App() {
   return (
     <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/role-selection" element={<RoleSelection />} />
-      <Route path="/login/:role" element={<LoginPage />} />
-      <Route path="/signup/:role" element={<SignupPage />} />
+      {/* Public routes — redirect to dashboard if already authenticated */}
+      <Route path="/" element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>} />
+      <Route path="/role-selection" element={<PublicOnlyRoute><RoleSelection /></PublicOnlyRoute>} />
+      <Route path="/login/:role" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+      <Route path="/signup/:role" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
+      {/* forgot/reset-password are intentionally always accessible */}
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
 

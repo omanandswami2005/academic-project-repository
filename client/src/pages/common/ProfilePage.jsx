@@ -42,6 +42,27 @@ const ProfilePage = () => {
     }
   }, [user])
 
+  // Fetch fresh profile from API on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data } = await userAPI.getProfile()
+        if (data.user) {
+          setProfile({
+            name: data.user.username || '',
+            email: data.user.email || '',
+            phone: data.user.mobile || '',
+            bio: '',
+            identifier: data.user.id || ''
+          })
+        }
+      } catch (err) {
+        // Fall back to cached user from AuthContext
+      }
+    }
+    fetchProfile()
+  }, [])
+
   const handleChange = (field, value) => {
     setProfile(prev => ({ ...prev, [field]: value }))
   }

@@ -6,8 +6,6 @@ module.exports = {
     out: './drizzle',
     dialect: 'postgresql',
     dbCredentials: {
-        // Uses DIRECT_URL (non-pooler, direct TCP) for migrations
-        // Falls back to DATABASE_URL if DIRECT_URL not set
-        url: process.env.DIRECT_URL || process.env.DATABASE_URL,
+        url: process.env.DATABASE_URL,
     },
 };

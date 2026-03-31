@@ -2,19 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Upload,
-  Image as ImageIcon,
   FileText,
   MessageSquare,
   TrendingUp,
   LogOut,
   CheckCircle,
   Clock,
-  AlertCircle,
   Folder,
   CheckSquare,
-  Calendar,
   BarChart3,
-  PieChart,
   Activity,
   User,
   Mail,
@@ -33,89 +29,7 @@ import { useAuth } from '../../context/AuthContext'
 import { projectAPI, feedbackAPI, analyticsAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 
-const summaryInfo = {
-  title: 'Smart Lab Automation Platform',
-  guide: 'Dr. Rekha Jadhav',
-  domain: 'IoT • Web App',
-  status: 'In Review',
-  statusTone: 'review',
-  completion: 68,
-  description: 'Unified dashboard that automates lab slot booking, device control and live analytics.'
-}
 
-const initialTasks = [
-  { id: 't1', title: 'Literature Review', due: 'Feb 04', priority: 'High' },
-  { id: 't2', title: 'Problem Statement', due: 'Feb 06', priority: 'High' },
-  { id: 't3', title: 'Methodology', due: 'Feb 10', priority: 'Medium' },
-  { id: 't4', title: 'Implementation', due: 'Mar 05', priority: 'Medium' },
-  { id: 't5', title: 'Testing', due: 'Mar 18', priority: 'Medium' },
-  { id: 't6', title: 'Final Report', due: 'Apr 05', priority: 'High' },
-  { id: 't7', title: 'PPT Preparation', due: 'Apr 08', priority: 'Low' }
-]
-
-const documentLibrary = [
-  { id: 'd1', label: 'Synopsis (PDF)', status: 'Uploaded', updated: 'Jan 15', type: 'pdf' },
-  { id: 'd2', label: 'SRS Document', status: 'Uploaded', updated: 'Jan 29', type: 'doc' },
-  { id: 'd3', label: 'Final Report', status: 'Pending', updated: null, type: 'doc' },
-  { id: 'd4', label: 'Research Papers', status: 'Shared', updated: 'Jan 22', type: 'pdf' },
-  { id: 'd5', label: 'Presentation Deck', status: 'Draft', updated: 'Feb 01', type: 'ppt' },
-  { id: 'd6', label: 'Code Bundle', status: 'Uploaded', updated: 'Jan 31', type: 'zip' },
-  { id: 'd7', label: 'Screenshots', status: 'Uploaded', updated: 'Jan 30', type: 'img' }
-]
-
-const progressMilestones = [
-  { id: 'm1', label: 'Topic Approval', status: 'completed', date: 'Jan 02' },
-  { id: 'm2', label: 'Synopsis', status: 'completed', date: 'Jan 18' },
-  { id: 'm3', label: 'Mid-term Review', status: 'current', date: 'Feb 12' },
-  { id: 'm4', label: 'Implementation', status: 'upcoming', date: 'Mar 08' },
-  { id: 'm5', label: 'Final Submission', status: 'upcoming', date: 'Apr 10' }
-]
-
-const activityFeed = [
-  { id: 'a1', text: 'Uploaded SRS v2 document', time: '2 hours ago' },
-  { id: 'a2', text: 'Marked Methodology task as complete', time: 'Yesterday' },
-  { id: 'a3', text: 'Received guide feedback on API design', time: 'Jan 30' }
-]
-
-const feedbackThread = [
-  {
-    id: 'c1',
-    author: 'Dr. Rekha Jadhav',
-    role: 'Guide',
-    timestamp: 'Jan 28 • 09:45 AM',
-    message: 'Add fallback routine for manual override when sensors go offline.'
-  },
-  {
-    id: 'c2',
-    author: 'Aarav Patil',
-    role: 'Student',
-    timestamp: 'Jan 28 • 01:05 PM',
-    message: 'Working on a watchdog script; will attach logs with next commit.'
-  },
-  {
-    id: 'c3',
-    author: 'Dr. Rekha Jadhav',
-    role: 'Guide',
-    timestamp: 'Jan 29 • 10:20 AM',
-    message: 'Great. Please share a short video of the updated workflow by Friday.'
-  }
-]
-
-const analyticsSnapshot = [
-  { id: 'an1', label: 'Task completion', value: 72, unit: '% complete', icon: CheckSquare },
-  { id: 'an2', label: 'Docs uploaded', value: 6, unit: '/ 9 required', icon: Folder },
-  { id: 'an3', label: 'Weekly progress', value: 12, unit: '+12% vs last week', icon: BarChart3 },
-  { id: 'an4', label: 'Pending items', value: 3, unit: 'tasks to finish', icon: PieChart }
-]
-
-const profileInfo = {
-  name: 'Aarav Patil',
-  email: 'aarav.patil@rscoe.edu',
-  phone: '+91 98765 43210',
-  branch: 'Computer Science',
-  year: 'Final Year',
-  bio: 'IoT enthusiast building automation suites for smarter labs.'
-}
 
 const skillResources = [
   {
@@ -182,12 +96,6 @@ const StudentDashboard = () => {
   const [activeSection, setActiveSection] = useState('overview')
   const [completion, setCompletion] = useState(0)
   const [notes, setNotes] = useState('')
-  const [taskState, setTaskState] = useState(() =>
-    initialTasks.reduce((acc, task) => {
-      acc[task.id] = task.id === 't1' || task.id === 't2'
-      return acc
-    }, {})
-  )
 
   // Project upload state
   const [projectForm, setProjectForm] = useState({
@@ -203,8 +111,6 @@ const StudentDashboard = () => {
   const [editingPhase, setEditingPhase] = useState(null)
   const [phaseDescription, setPhaseDescription] = useState('')
   const [feedbackData, setFeedbackData] = useState([])
-
-  const completedTasks = initialTasks.filter(task => taskState[task.id]).length
 
   // Fetch student's projects
   const fetchMyProjects = async () => {
@@ -235,13 +141,6 @@ const StudentDashboard = () => {
     fetchMyProjects()
   }, [user])
 
-  const handleTaskToggle = (taskId) => {
-    setTaskState(prev => ({
-      ...prev,
-      [taskId]: !prev[taskId]
-    }))
-  }
-
   const handleSectionChange = (section) => {
     setActiveSection(section)
     const element = document.getElementById(section)
@@ -253,14 +152,6 @@ const StudentDashboard = () => {
   const handleLogout = async () => {
     await logout()
     navigate('/')
-  }
-
-  const handleFileUpload = (label) => {
-    alert(`Upload flow for ${label} would trigger here.`)
-  }
-
-  const handleProgressUpdate = () => {
-    alert(`Progress updated to ${completion}%`)
   }
 
   // Handle file selection
@@ -386,19 +277,6 @@ const StudentDashboard = () => {
   const cancelEditing = () => {
     setEditingPhase(null)
     setPhaseDescription('')
-  }
-
-  // Get phase display name
-  const getPhaseName = (phase) => {
-    const phaseNames = {
-      phase1_idea: 'Phase 1: Publishing Idea',
-      phase2_research_paper: 'Phase 2: Publishing Research Paper',
-      phase3_building_prototype: 'Phase 3: Building Prototype',
-      phase4_completing_prototype: 'Phase 4: Completing Prototype',
-      phase5_completing_model: 'Phase 5: Completing Model',
-      phase6_final_submission: 'Phase 6: Final Submission'
-    }
-    return phaseNames[phase] || phase
   }
 
   // Render stars

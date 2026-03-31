@@ -19,29 +19,36 @@ export function AuthProvider({ children }) {
         return () => window.removeEventListener('auth:logout', handleForcedLogout);
     }, [navigate]);
 
-    // Load user from stored tokens on mount
+    // Auto-login: restore session from stored JWT on every mount
     useEffect(() => {
         const loadUser = async () => {
             const accessToken = localStorage.getItem('accessToken');
             const storedUser = localStorage.getItem('user');
 
-            if (accessToken && storedUser) {
-                try {
-                    setUser(JSON.parse(storedUser));
-                    // Optionally refresh profile from server
-                    const { data } = await userAPI.getProfile();
-                    const freshUser = data.user;
-                    setUser(freshUser);
-                    localStorage.setItem('user', JSON.stringify(freshUser));
-                } catch (err) {
-                    // If token is invalid, clear everything
-                    if (err.response?.status === 401) {
-                        localStorage.clear();
-                        setUser(null);
-                    }
-                }
+            if (!accessToken || !storedUser) {
+                setLoading(false);
+                return;
             }
-            setLoading(false);
+
+            // Restore immediately so ProtectedRoutes don't flicker
+            setUser(JSON.parse(storedUser));
+
+            try {
+                // Validate token + get fresh profile data from server
+                const { data } = await userAPI.getProfile();
+                const freshUser = data.user;
+                setUser(freshUser);
+                localStorage.setItem('user', JSON.stringify(freshUser));
+            } catch (err) {
+                if (err.response?.status === 401) {
+                    // Token expired AND refresh failed (interceptor already tried)
+                    localStorage.clear();
+                    setUser(null);
+                }
+                // Network/server errors: keep the cached user so offline still works
+            } finally {
+                setLoading(false);
+            }
         };
         loadUser();
     }, []);

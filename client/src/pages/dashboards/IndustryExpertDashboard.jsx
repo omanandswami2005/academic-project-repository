@@ -1,18 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Activity,
-  Briefcase,
-  Calendar,
   Download,
-  Eye,
   FileText,
   LayoutGrid,
   Search,
+  Star,
+  Trophy,
   User
 } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { useAuth } from '../../context/AuthContext'
-import { projectAPI, feedbackAPI } from '../../services/api'
+import { projectAPI, feedbackAPI, analyticsAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 import './IndustryExpertDashboard.css'
 
@@ -27,138 +25,12 @@ const completionBrackets = [
   { id: '80-100', label: '80 - 100%' }
 ]
 
-const projectCatalog = [
-  {
-    id: 1,
-    title: 'Predictive Maintenance Grid',
-    student: 'Vikram Nair',
-    roll: 'RSCOE-EE-011',
-    branch: 'Electrical',
-    year: '2024',
-    domain: 'AI + IoT',
-    category: 'Smart Systems',
-    technology: 'AI',
-    progress: 82,
-    innovationScore: 9.1,
-    status: 'On Track',
-    description: 'Proactive maintenance console predicting feeder faults from live SCADA telemetry.',
-    problem: 'Manual logging leads to reactive maintenance and prolonged outages.',
-    techStack: ['Python', 'TensorFlow', 'Azure IoT Edge'],
-    team: [
-      { name: 'Vikram Nair', role: 'Lead Engineer' },
-      { name: 'Shreya Tawde', role: 'Data Analyst' }
-    ],
-    documents: ['Synopsis.pdf', 'ArchitectureDeck.pptx', 'Firmware.zip'],
-    timeline: [
-      { label: 'Topic Approval', status: 'completed', date: 'Jan 05' },
-      { label: 'Prototype', status: 'completed', date: 'Jan 24' },
-      { label: 'Pilot Run', status: 'current', date: 'Feb 08' },
-      { label: 'Field Trials', status: 'upcoming', date: 'Mar 14' },
-      { label: 'Handover', status: 'upcoming', date: 'Apr 10' }
-    ],
-    featured: true
-  },
-  {
-    id: 2,
-    title: 'Immersive Heritage Walkthrough',
-    student: 'Riya Bhosale',
-    roll: 'RSCOE-AR-006',
-    branch: 'A&R',
-    year: '2024',
-    domain: 'AR/VR Experience',
-    category: 'Experience',
-    technology: 'AR/VR',
-    progress: 74,
-    innovationScore: 8.6,
-    status: 'On Track',
-    description: 'Story-led AR tour narrating campus heritage with multilingual captions.',
-    problem: 'Visitors miss contextual narratives during physical tours.',
-    techStack: ['Unity', 'Blender', 'Azure Spatial Anchors'],
-    team: [
-      { name: 'Riya Bhosale', role: 'Experience Designer' },
-      { name: 'Kabir Patil', role: '3D Artist' }
-    ],
-    documents: ['ExperienceFlow.pdf', 'Storyboard.pptx'],
-    timeline: [
-      { label: 'Research', status: 'completed', date: 'Jan 04' },
-      { label: 'Assets', status: 'completed', date: 'Jan 21' },
-      { label: 'Interactions', status: 'current', date: 'Feb 06' },
-      { label: 'Testing', status: 'upcoming', date: 'Mar 05' },
-      { label: 'Launch', status: 'upcoming', date: 'Apr 02' }
-    ],
-    featured: true
-  },
-  {
-    id: 3,
-    title: 'Supply Chain Intelligence Hub',
-    student: 'Maitri Deshmukh',
-    roll: 'RSCOE-CSBS-014',
-    branch: 'CSBS',
-    year: '2024',
-    domain: 'Data Analytics',
-    category: 'Analytics',
-    technology: 'ML',
-    progress: 67,
-    innovationScore: 8.2,
-    status: 'On Track',
-    description: 'Predictive dashboard forecasting SKU depletion and supplier delays.',
-    problem: 'Procurement teams rely on stale spreadsheets for ordering decisions.',
-    techStack: ['PowerBI', 'Python', 'Snowflake'],
-    team: [{ name: 'Maitri Deshmukh', role: 'Data Storyteller' }],
-    documents: ['BusinessCase.pdf', 'ModelCard.docx'],
-    timeline: [
-      { label: 'Discovery', status: 'completed', date: 'Jan 03' },
-      { label: 'Data Cleaning', status: 'completed', date: 'Jan 18' },
-      { label: 'Modeling', status: 'current', date: 'Feb 04' },
-      { label: 'Pilot', status: 'upcoming', date: 'Mar 02' },
-      { label: 'Rollout', status: 'upcoming', date: 'Apr 05' }
-    ],
-    featured: false
-  },
-  {
-    id: 4,
-    title: 'Adaptive Suspension Prototype',
-    student: 'Neha Wagh',
-    roll: 'RSCOE-MECH-004',
-    branch: 'Mechanical',
-    year: '2024',
-    domain: 'Product Design',
-    category: 'Product Design',
-    technology: 'Product',
-    progress: 58,
-    innovationScore: 7.9,
-    status: 'Behind',
-    description: 'Lightweight suspension that tunes damping based on live load signatures.',
-    problem: 'Race vehicles lose time between stages adjusting suspension manually.',
-    techStack: ['ANSYS', 'SolidWorks', 'MATLAB'],
-    team: [
-      { name: 'Neha Wagh', role: 'Design Lead' },
-      { name: 'Rohit Mane', role: 'Simulation Engineer' }
-    ],
-    documents: ['StressPlots.pdf', 'PrototypePhotos.zip'],
-    timeline: [
-      { label: 'Concept', status: 'completed', date: 'Jan 09' },
-      { label: 'CAD', status: 'completed', date: 'Jan 29' },
-      { label: 'Fabrication', status: 'current', date: 'Feb 12' },
-      { label: 'Track Tests', status: 'upcoming', date: 'Mar 18' },
-      { label: 'OEM Review', status: 'upcoming', date: 'Apr 12' }
-    ],
-    featured: false
-  }
-]
-
 const evaluationTemplate = {
   feedback: '',
   innovation: 8,
   feasibility: 7,
   hireability: 8
 }
-
-const heroStats = [
-  { id: 'hs1', label: 'Projects Reviewed', value: '32', detail: '+4 this week' },
-  { id: 'hs2', label: 'Featured Projects', value: '8', detail: 'High innovation' },
-  { id: 'hs3', label: 'Pending Responses', value: '5', detail: 'Awaiting expert input' }
-]
 
 const IndustryExpertDashboard = () => {
   const { user, logout } = useAuth()
@@ -174,6 +46,14 @@ const IndustryExpertDashboard = () => {
   const [evaluation, setEvaluation] = useState(evaluationTemplate)
   const [apiProjects, setApiProjects] = useState([])
   const [loadingProjects, setLoadingProjects] = useState(false)
+  const [domainFilter, setDomainFilter] = useState('')
+  const [topStudents, setTopStudents] = useState([])
+  const [loadingTopStudents, setLoadingTopStudents] = useState(false)
+  const [deptBranch, setDeptBranch] = useState('CSE')
+  const [deptStats, setDeptStats] = useState(null)
+  const [loadingDeptStats, setLoadingDeptStats] = useState(false)
+  const [projectPhases, setProjectPhases] = useState([])
+  const [loadingDetail, setLoadingDetail] = useState(false)
 
   // Fetch projects from API
   useEffect(() => {
@@ -191,8 +71,41 @@ const IndustryExpertDashboard = () => {
     fetchProjects()
   }, [])
 
-  // Use API projects if available, fall back to mock catalog
-  const allProjects = apiProjects.length > 0 ? apiProjects.map(p => ({
+  // Fetch top students whenever domain filter changes
+  useEffect(() => {
+    const fetchTopStudents = async () => {
+      setLoadingTopStudents(true)
+      try {
+        const params = domainFilter ? { domain: domainFilter, limit: 10 } : { limit: 10 }
+        const { data } = await analyticsAPI.getTopStudents(params)
+        setTopStudents(data.students || [])
+      } catch {
+        setTopStudents([])
+      } finally {
+        setLoadingTopStudents(false)
+      }
+    }
+    fetchTopStudents()
+  }, [domainFilter])
+
+  // Fetch department stats whenever branch changes
+  useEffect(() => {
+    const fetchDeptStats = async () => {
+      setLoadingDeptStats(true)
+      try {
+        const { data } = await analyticsAPI.getDepartmentStats(deptBranch)
+        setDeptStats(data)
+      } catch {
+        setDeptStats(null)
+      } finally {
+        setLoadingDeptStats(false)
+      }
+    }
+    fetchDeptStats()
+  }, [deptBranch])
+
+  // Map API projects to display format
+  const allProjects = apiProjects.map(p => ({
     ...p,
     student: p.studentName || 'Student',
     roll: p.uniqueProjectId || '',
@@ -211,7 +124,24 @@ const IndustryExpertDashboard = () => {
     documents: [],
     timeline: [],
     featured: (p.stars || 0) >= 3,
-  })) : projectCatalog
+  }))
+
+  const uniqueDomains = useMemo(() => {
+    const set = new Set()
+    apiProjects.forEach(p => (p.domainTags || []).forEach(t => set.add(t)))
+    return Array.from(set).sort()
+  }, [apiProjects])
+
+  const heroStats = useMemo(() => {
+    const reviewed = allProjects.filter(p => p.status === 'On Track').length
+    const featured = allProjects.filter(p => p.featured).length
+    const pending = allProjects.filter(p => p.status !== 'On Track' && p.status !== 'Behind').length
+    return [
+      { id: 'hs1', label: 'Projects Reviewed', value: String(reviewed), detail: `${allProjects.length} total` },
+      { id: 'hs2', label: 'Featured Projects', value: String(featured), detail: 'High innovation' },
+      { id: 'hs3', label: 'Pending Responses', value: String(pending), detail: 'Awaiting expert input' }
+    ]
+  }, [allProjects])
 
   const filteredProjects = useMemo(() => {
     return allProjects.filter(project => {
@@ -240,9 +170,19 @@ const IndustryExpertDashboard = () => {
     setFilters(prev => ({ ...prev, [field]: value }))
   }
 
-  const openProject = (project) => {
+  const openProject = async (project) => {
     setSelectedProject(project)
     setEvaluation(evaluationTemplate)
+    setProjectPhases([])
+    setLoadingDetail(true)
+    try {
+      const { data } = await projectAPI.getById(project.id)
+      setProjectPhases(data.project?.phases || [])
+    } catch {
+      // phases not critical — silently ignore
+    } finally {
+      setLoadingDetail(false)
+    }
   }
 
   const closeProject = () => setSelectedProject(null)
@@ -399,6 +339,107 @@ const IndustryExpertDashboard = () => {
               </div>
             )}
           </div>
+        </section>
+
+        {/* ── Top Students Leaderboard ── */}
+        <section className="analytics-section card fade-up">
+          <div className="analytics-header">
+            <div className="section-heading">
+              <h3><Trophy size={16} /> Top Students by Domain</h3>
+              <p>Ranked by total stars earned across all projects</p>
+            </div>
+            <label className="analytics-filter-label">
+              Domain
+              <select value={domainFilter} onChange={e => setDomainFilter(e.target.value)}>
+                <option value="">All Domains</option>
+                {uniqueDomains.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {loadingTopStudents ? (
+            <p className="loading-text">Loading leaderboard...</p>
+          ) : topStudents.length === 0 ? (
+            <div className="empty-state">
+              <User size={24} />
+              <p>No students found{domainFilter ? ` for "${domainFilter}"` : ''}.</p>
+            </div>
+          ) : (
+            <div className="student-leaderboard">
+              {topStudents.map((s, i) => (
+                <div key={s.studentId} className="student-rank-card">
+                  <span className={`rank-badge rank-${Math.min(i + 1, 4)}`}>{i + 1}</span>
+                  <div className="rank-info">
+                    <strong>{s.studentName}</strong>
+                    <span>{s.branch || '—'} · {s.projectCount} project{s.projectCount !== 1 ? 's' : ''}</span>
+                    <div className="rank-domain-tags">
+                      {s.domains.slice(0, 3).map(d => <span key={d}>{d}</span>)}
+                    </div>
+                  </div>
+                  <div className="rank-score">
+                    <strong>{s.totalStars}</strong>
+                    <span><Star size={12} /> stars</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ── Department Statistics Bar Chart ── */}
+        <section className="analytics-section card fade-up">
+          <div className="analytics-header">
+            <div className="section-heading">
+              <h3>Department Statistics</h3>
+              <p>Project distribution and domain breakdown by branch</p>
+            </div>
+            <label className="analytics-filter-label">
+              Branch
+              <select value={deptBranch} onChange={e => setDeptBranch(e.target.value)}>
+                {branchFilters.filter(b => b !== 'All').map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {loadingDeptStats ? (
+            <p className="loading-text">Loading department data...</p>
+          ) : deptStats ? (
+            <>
+              <div className="dept-summary">
+                <div className="dept-stat"><strong>{deptStats.totalStudents}</strong><span>Students</span></div>
+                <div className="dept-stat"><strong>{deptStats.totalProjects}</strong><span>Projects</span></div>
+                <div className="dept-stat"><strong>{deptStats.approvedProjects}</strong><span>Approved</span></div>
+                <div className="dept-stat"><strong>{deptStats.pendingProjects}</strong><span>Pending</span></div>
+                <div className="dept-stat"><strong>{deptStats.averageStars}</strong><span>Avg Stars</span></div>
+              </div>
+              {deptStats.domainDistribution && deptStats.domainDistribution.length > 0 ? (
+                <div className="dept-bar-chart">
+                  <p className="chart-label">Domain Distribution</p>
+                  {[...deptStats.domainDistribution]
+                    .sort((a, b) => b.count - a.count)
+                    .map(item => {
+                      const max = Math.max(...deptStats.domainDistribution.map(d => d.count), 1)
+                      const pct = Math.round((item.count / max) * 100)
+                      return (
+                        <div key={item.domain} className="bar-item">
+                          <span className="bar-label">{item.domain}</span>
+                          <div className="bar-track">
+                            <div className="bar-fill" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="bar-count">{item.count}</span>
+                        </div>
+                      )
+                    })}
+                </div>
+              ) : (
+                <p className="loading-text">No domain data for {deptBranch} yet.</p>
+              )}
+            </>
+          ) : (
+            <div className="empty-state"><p>No data available for {deptBranch}.</p></div>
+          )}
         </section>
       </div>
 
@@ -559,14 +600,39 @@ const IndustryExpertDashboard = () => {
                   </button>
                 </div>
                 <div className="modal-card-block">
-                  <h4>Progress Trend</h4>
-                  <div className="mini-chart">
-                    <Activity size={42} />
-                    <div>
-                      <strong>Consistency 86%</strong>
-                      <span>Stable output past 3 sprints</span>
+                  <h4>Project Phases</h4>
+                  {loadingDetail ? (
+                    <p className="loading-text">Loading phases...</p>
+                  ) : (
+                    <div className="phase-steps">
+                      {projectPhases.length > 0 ? projectPhases.map((phase, i) => (
+                        <div key={phase.id || i} className={`phase-step ${phase.completed ? 'done' : ''}`}>
+                          <div className="phase-dot">{phase.completed ? '✓' : phase.phaseNumber || i + 1}</div>
+                          <div className="phase-info">
+                            <strong>{phase.phaseName}</strong>
+                            {phase.completed && phase.completedAt && (
+                              <span>{new Date(phase.completedAt).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                      )) : (
+                        <p className="loading-text">No phase data available yet.</p>
+                      )}
                     </div>
+                  )}
+                  <div className="phase-progress-bar">
+                    <div
+                      className="phase-progress-fill"
+                      style={{
+                        width: projectPhases.length > 0
+                          ? `${Math.round((projectPhases.filter(p => p.completed).length / projectPhases.length) * 100)}%`
+                          : '0%'
+                      }}
+                    />
                   </div>
+                  <p className="phase-progress-text">
+                    {projectPhases.filter(p => p.completed).length} / {projectPhases.length || 6} phases complete
+                  </p>
                 </div>
               </div>
             </div>

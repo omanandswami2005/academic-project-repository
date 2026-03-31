@@ -25,6 +25,14 @@ const signup = async (req, res) => {
             return res.status(400).json({ message: 'User with this email already exists.' });
         }
 
+        if (prn) {
+            const existingPrn = await db.select({ id: users.id }).from(users).where(eq(users.prn, prn)).limit(1);
+            if (existingPrn.length > 0) {
+                logger.warn('AUTH', `Signup rejected — PRN already exists: ${prn}`);
+                return res.status(400).json({ message: 'User with this PRN already exists.' });
+            }
+        }
+
         const passwordHash = await bcrypt.hash(password, 12);
 
         const [newUser] = await db.insert(users).values({
@@ -52,6 +60,9 @@ const signup = async (req, res) => {
     } catch (error) {
         logger.error('AUTH', 'Signup failed', error);
         if (error.code === '23505') {
+            if (error.detail && error.detail.includes('prn')) {
+                return res.status(400).json({ message: 'User with this PRN already exists.' });
+            }
             return res.status(400).json({ message: 'Email already exists.' });
         }
         res.status(500).json({ message: 'Internal Server Error. Please try again.' });

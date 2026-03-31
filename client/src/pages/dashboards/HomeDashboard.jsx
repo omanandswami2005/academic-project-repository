@@ -8,23 +8,23 @@ import './HomeDashboard.css'
 
 const roleLinks = {
   student: [
-    { label: 'My Projects', path: '/student', icon: FolderOpen, color: '#4169E1' },
-    { label: 'Track Phases', path: '/student', icon: CheckCircle, color: '#10b981' },
-    { label: 'My Profile', path: '/profile', icon: Users, color: '#8b5cf6' },
+    { label: 'My Projects', path: '/student', icon: FolderOpen },
+    { label: 'Track Phases', path: '/student', icon: CheckCircle },
+    { label: 'My Profile', path: '/profile', icon: Users },
   ],
   teacher: [
-    { label: 'Review Projects', path: '/teacher', icon: FolderOpen, color: '#4169E1' },
-    { label: 'Student Tracker', path: '/teacher', icon: Users, color: '#10b981' },
-    { label: 'Branch Overview', path: '/teacher/branches', icon: BarChart2, color: '#f59e0b' },
+    { label: 'Review Projects', path: '/teacher', icon: FolderOpen },
+    { label: 'Student Tracker', path: '/teacher', icon: Users },
+    { label: 'Branch Overview', path: '/teacher/branches', icon: BarChart2 },
   ],
   expert: [
-    { label: 'Project Catalog', path: '/expert', icon: BookOpen, color: '#4169E1' },
-    { label: 'Top Students', path: '/expert', icon: Users, color: '#10b981' },
-    { label: 'My Profile', path: '/profile', icon: BarChart2, color: '#8b5cf6' },
+    { label: 'Project Catalog', path: '/expert', icon: BookOpen },
+    { label: 'Top Students', path: '/expert', icon: Users },
+    { label: 'My Profile', path: '/profile', icon: BarChart2 },
   ],
   admin: [
-    { label: 'All Projects', path: '/home', icon: FolderOpen, color: '#4169E1' },
-    { label: 'My Profile', path: '/profile', icon: Users, color: '#10b981' },
+    { label: 'All Projects', path: '/home', icon: FolderOpen },
+    { label: 'My Profile', path: '/profile', icon: Users },
   ],
 }
 
@@ -63,59 +63,53 @@ const HomeDashboard = () => {
   const links = roleLinks[user?.role] || roleLinks.student
 
   const statCards = [
-    { label: 'Total Projects', value: projectStats.total, icon: FolderOpen, color: '#4169E1' },
-    { label: 'Pending Review', value: projectStats.pending, icon: Clock, color: '#f59e0b' },
-    { label: 'Approved', value: projectStats.approved, icon: CheckCircle, color: '#10b981' },
-    { label: 'In Progress', value: projectStats.inProgress, icon: BarChart2, color: '#8b5cf6' },
+    { label: 'Total Projects', value: projectStats.total, icon: FolderOpen },
+    { label: 'Pending Review', value: projectStats.pending, icon: Clock },
+    { label: 'Approved', value: projectStats.approved, icon: CheckCircle },
+    { label: 'In Progress', value: projectStats.inProgress, icon: BarChart2 },
   ]
 
   return (
     <DashboardLayout
-      pageTitle="RSCOE Workspace Overview"
+      pageTitle="Workspace Overview"
       pageDescription={`Welcome back, ${user?.username || 'User'} — ${user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''} · ${user?.branch || ''}`}
     >
       <div className="home-grid">
 
-        {/* Stats row */}
         <section className="home-card stats-card">
           <h3>Platform Overview</h3>
           <div className="stats-row">
-            {statCards.map(({ label, value, icon: Icon, color }) => (
+            {statCards.map(({ label, value, icon: Icon }) => (
               <div key={label} className="stat-pill">
-                <Icon size={22} style={{ color }} />
-                <strong style={{ color }}>{loading ? '–' : value}</strong>
+                <Icon size={18} />
+                <strong>{loading ? '–' : value}</strong>
                 <p>{label}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Quick navigation */}
         <section className="home-card">
           <h3>Quick Navigation</h3>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1rem' }}>Jump to your most-used areas.</p>
+          <p className="home-muted" style={{ marginBottom: '0.75rem' }}>Jump to your most-used areas.</p>
           <div className="quick-links">
-            {links.map(({ label, path, icon: Icon, color }) => (
+            {links.map(({ label, path, icon: Icon }) => (
               <button
                 key={label}
                 className="quick-link-btn"
                 onClick={() => navigate(path)}
-                style={{ '--link-color': color }}
               >
-                <Icon size={20} />
+                <Icon size={16} />
                 <span>{label}</span>
               </button>
             ))}
           </div>
         </section>
 
-        {/* Recent notifications */}
         <section className="home-card">
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Bell size={18} /> Recent Notifications
-          </h3>
+          <h3><Bell size={16} /> Recent Notifications</h3>
           {recentNotifs.length === 0 ? (
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.75rem' }}>
+            <p className="home-muted" style={{ marginTop: '0.5rem' }}>
               {loading ? 'Loading…' : 'No notifications yet.'}
             </p>
           ) : (
@@ -128,15 +122,11 @@ const HomeDashboard = () => {
               ))}
             </ul>
           )}
-          <button
-            className="see-all-btn"
-            onClick={() => navigate('/profile')}
-          >
+          <button className="see-all-btn" onClick={() => navigate('/profile')}>
             View Profile & Settings →
           </button>
         </section>
 
-        {/* Tips */}
         <section className="home-card">
           <h3>Tips</h3>
           <ul className="reminder-list">

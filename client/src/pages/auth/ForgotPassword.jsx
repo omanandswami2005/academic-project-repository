@@ -1,89 +1,73 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Mail } from 'lucide-react'
+import { ArrowLeft, Mail, Moon, Sun } from 'lucide-react'
 import { authAPI } from '../../services/api'
+import { useTheme } from '../../context/ThemeContext'
 import toast from 'react-hot-toast'
 import './LoginPage.css'
 
 const ForgotPassword = () => {
   const navigate = useNavigate()
+  const { isDark, toggleTheme } = useTheme()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setMessage('')
 
     try {
-      const response = await authAPI.forgotPassword(email)
-      setMessage(response.data.message || 'If an account with that email exists, a password reset link has been sent.')
+      await authAPI.forgotPassword(email)
       toast.success('Reset link sent! Check your email.')
     } catch (error) {
-      setMessage(error.response?.data?.message || 'An error occurred. Please try again.')
-      toast.error(error.response?.data?.message || 'An error occurred.')
+      toast.error(error.response?.data?.message || 'An error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="login-page">
-      <div className="background-pattern"></div>
-      <div className="login-container glassmorphism neumorphic">
-        <button className="back-button" onClick={() => navigate('/role-selection?action=login')}>
-          <ArrowLeft size={20} />
+    <div className="auth-page">
+      <button type="button" className="theme-toggle-floating" onClick={toggleTheme} aria-label="Toggle theme">
+        {isDark ? <Sun size={16} /> : <Moon size={16} />}
+      </button>
+
+      <div className="auth-container">
+        <button className="auth-back" onClick={() => navigate('/role-selection?action=login')}>
+          <ArrowLeft size={15} />
           Back
         </button>
 
-        <div className="login-header">
-          <h1 className="login-title">Forgot Password</h1>
-          <p className="login-subtitle">Enter your email address and we'll send you a link to reset your password</p>
+        <div className="auth-header">
+          <h1>Forgot Password</h1>
+          <p>Enter your email and we'll send you a reset link</p>
         </div>
 
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email" className="form-label">
-              <Mail size={18} />
+              <Mail size={15} />
               Email Address
             </label>
             <input
               type="email"
               id="email"
               name="email"
-              className="form-input neumorphic-inset"
-              placeholder="Enter your email address"
+              className="form-input"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
 
-          {message && (
-            <div className={`message ${message.includes('error') || message.includes('Error') ? 'error' : 'success'}`} style={{
-              padding: '12px',
-              borderRadius: '8px',
-              marginBottom: '16px',
-              backgroundColor: message.includes('error') || message.includes('Error') ? '#fee' : '#efe',
-              color: message.includes('error') || message.includes('Error') ? '#c33' : '#3c3',
-              fontSize: '14px'
-            }}>
-              {message}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="login-button glow-effect"
-            disabled={loading}
-          >
+          <button type="submit" className="auth-submit" disabled={loading}>
             {loading ? 'Sending...' : 'Send Reset Link'}
           </button>
         </form>
 
-        <div className="login-footer">
-          <p>Remember your password? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/role-selection?action=login') }}>Sign In</a></p>
+        <div className="auth-link">
+          <p>Remember your password? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/role-selection?action=login') }}>Sign in</a></p>
         </div>
       </div>
     </div>

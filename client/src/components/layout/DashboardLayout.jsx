@@ -9,9 +9,11 @@ import {
   Moon,
   Search,
   Sun,
-  User
+  User,
+  X
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { useTheme } from '../../context/ThemeContext'
 import { notificationAPI } from '../../services/api'
 import './DashboardLayout.css'
 
@@ -19,18 +21,17 @@ const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => 
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('rscoe-theme') === 'dark')
+  const { isDark, toggleTheme } = useTheme()
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Fetch real notifications
   const fetchNotifications = useCallback(async () => {
     try {
       const { data } = await notificationAPI.getAll({ limit: 10 })
       setNotifications(data.notifications || [])
     } catch {
-      // Silently fail if notifications endpoint not ready
+      // silently fail
     }
   }, [])
 
@@ -58,11 +59,6 @@ const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => 
     { id: 'help', label: 'Help', icon: HelpCircle, path: '/help' }
   ]
 
-  useEffect(() => {
-    document.body.classList.toggle('dark-mode', isDarkMode)
-    localStorage.setItem('rscoe-theme', isDarkMode ? 'dark' : 'light')
-  }, [isDarkMode])
-
   const handleNav = (link) => {
     if (link.action) {
       link.action()
@@ -75,7 +71,6 @@ const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => 
   const handleSearch = (e) => {
     e.preventDefault()
     if (!searchTerm.trim()) return
-    alert(`Searching for "${searchTerm}" across students, projects, and documents.`)
   }
 
   const handleLogout = async () => {
@@ -87,28 +82,25 @@ const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => 
     navigate('/')
   }
 
+  const unreadCount = notifications.filter(n => !n.read).length
+
   return (
-    <div className={`app-shell ${isDarkMode ? 'dark' : ''}`}>
+    <div className="app-shell">
       <header className="global-nav">
         <div className="global-nav-left">
-          <div className="logo">RSCOE</div>
-          {user && (
-            <div className="user-greeting" style={{ marginLeft: '20px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-              Welcome, <strong style={{ color: 'var(--text-primary)' }}>{user.username}</strong>
-            </div>
-          )}
+          <button className="logo" type="button" onClick={() => navigate('/home')}>APRS</button>
           <form className="global-search" onSubmit={handleSearch}>
-            <Search size={16} />
+            <Search size={15} />
             <input
               type="search"
-              placeholder="Search students, projects, documents..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </form>
         </div>
         <div className="global-nav-right">
-          <div className="nav-links">
+          <nav className="nav-links">
             {navLinks.map(link => {
               const Icon = link.icon
               const isActive = link.path ? location.pathname.startsWith(link.path) : false
@@ -119,43 +111,53 @@ const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => 
                   className={`nav-pill ${isActive ? 'active' : ''}`}
                   onClick={() => handleNav(link)}
                 >
-                  <Icon size={16} />
-                  {link.label}
+                  <Icon size={15} />
+                  <span className="nav-pill-label">{link.label}</span>
+                  {link.id === 'notifications' && unreadCount > 0 && (
+                    <span className="notif-badge">{unreadCount}</span>
+                  )}
                 </button>
               )
             })}
+          </nav>
+          <div className="nav-actions">
+            <button
+              type="button"
+              className="btn-icon theme-toggle"
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+            >
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+            <button type="button" className="btn-icon logout-btn" onClick={handleLogout} aria-label="Logout">
+              <LogOut size={16} />
+            </button>
           </div>
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={() => setIsDarkMode(prev => !prev)}
-            aria-label="Toggle dark mode"
-          >
-            {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-          <button type="button" className="nav-pill danger" onClick={handleLogout}>
-            <LogOut size={16} />
-            Logout
-          </button>
           {showNotifications && (
-            <div className="global-notifications">
-              {notifications.length === 0 ? (
-                <div className="notification-row">
-                  <p>No notifications yet</p>
-                </div>
-              ) : (
-                notifications.map(item => (
-                  <div key={item.id} className="notification-row">
-                    <p>{item.message}</p>
-                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
-                  </div>
-                ))
-              )}
+            <div className="notifications-dropdown">
+              <div className="notifications-header">
+                <h4>Notifications</h4>
+                <button type="button" className="btn-icon" onClick={() => setShowNotifications(false)}>
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="notifications-list">
+                {notifications.length === 0 ? (
+                  <p className="notifications-empty">No notifications yet</p>
+                ) : (
+                  notifications.map(item => (
+                    <div key={item.id} className={`notification-item ${item.read ? '' : 'unread'}`}>
+                      <p>{item.message}</p>
+                      <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>
       </header>
-      <div className="layout-content">
+      <main className="layout-content">
         {(pageTitle || pageDescription) && (
           <div className="layout-heading">
             {pageTitle && <h1>{pageTitle}</h1>}
@@ -163,7 +165,7 @@ const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => 
           </div>
         )}
         {children}
-      </div>
+      </main>
     </div>
   )
 }

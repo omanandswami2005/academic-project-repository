@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Mail, Lock, Eye, EyeOff, Moon, Sun } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { useTheme } from '../../context/ThemeContext'
 import toast from 'react-hot-toast'
 import './LoginPage.css'
 
@@ -9,6 +10,7 @@ const LoginPage = () => {
   const { role } = useParams()
   const navigate = useNavigate()
   const { login } = useAuth()
+  const { isDark, toggleTheme } = useTheme()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -19,7 +21,7 @@ const LoginPage = () => {
   const roleTitles = {
     student: 'Student Login',
     teacher: 'Teacher Login',
-    expert: 'Industry Expert Login'
+    expert: 'Expert Login'
   }
 
   const handleSubmit = async (e) => {
@@ -54,36 +56,35 @@ const LoginPage = () => {
     })
   }
 
-  const handleForgotPassword = () => {
-    navigate('/forgot-password')
-  }
-
   return (
-    <div className="login-page">
-      <div className="background-pattern"></div>
-      <div className="login-container glassmorphism neumorphic">
-        <button className="back-button" onClick={() => navigate('/role-selection?action=login')}>
-          <ArrowLeft size={20} />
+    <div className="auth-page">
+      <button type="button" className="theme-toggle-floating" onClick={toggleTheme} aria-label="Toggle theme">
+        {isDark ? <Sun size={16} /> : <Moon size={16} />}
+      </button>
+
+      <div className="auth-container">
+        <button className="auth-back" onClick={() => navigate('/role-selection?action=login')}>
+          <ArrowLeft size={15} />
           Back
         </button>
 
-        <div className="login-header">
-          <h1 className="login-title">{roleTitles[role] || 'Login'}</h1>
-          <p className="login-subtitle">Enter your credentials to continue</p>
+        <div className="auth-header">
+          <h1>{roleTitles[role] || 'Login'}</h1>
+          <p>Enter your credentials to continue</p>
         </div>
 
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email" className="form-label">
-              <Mail size={18} />
-              Email / ID
+              <Mail size={15} />
+              Email
             </label>
             <input
               type="text"
               id="email"
               name="email"
-              className="form-input neumorphic-inset"
-              placeholder="Enter your email or ID"
+              className="form-input"
+              placeholder="you@example.com"
               value={formData.email}
               onChange={handleChange}
               required
@@ -92,15 +93,15 @@ const LoginPage = () => {
 
           <div className="form-group">
             <label htmlFor="password" className="form-label">
-              <Lock size={18} />
+              <Lock size={15} />
               Password
             </label>
-            <div className="password-input-wrapper">
+            <div className="password-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="password"
                 name="password"
-                className="form-input neumorphic-inset"
+                className="form-input"
                 placeholder="Enter your password"
                 value={formData.password}
                 onChange={handleChange}
@@ -111,28 +112,24 @@ const LoginPage = () => {
                 className="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
-          <div className="forgot-password">
-            <button
-              type="button"
-              className="forgot-password-link"
-              onClick={handleForgotPassword}
-            >
-              Forgot Password?
+          <div className="forgot-link">
+            <button type="button" onClick={() => navigate('/forgot-password')}>
+              Forgot password?
             </button>
           </div>
 
-          <button type="submit" className="login-button glow-effect" disabled={loading}>
-            {loading ? 'Signing In...' : 'Sign In'}
+          <button type="submit" className="auth-submit" disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 
-        <div className="login-footer">
-          <p>Don't have an account? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/role-selection?action=signup') }}>Sign Up</a></p>
+        <div className="auth-link">
+          <p>Don't have an account? <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/signup/${role}`) }}>Sign up</a></p>
         </div>
       </div>
     </div>

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Lock, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Lock, Eye, EyeOff, Moon, Sun } from 'lucide-react'
 import { authAPI } from '../../services/api'
+import { useTheme } from '../../context/ThemeContext'
 import toast from 'react-hot-toast'
 import './LoginPage.css'
 
 const ResetPassword = () => {
   const { token } = useParams()
   const navigate = useNavigate()
+  const { isDark, toggleTheme } = useTheme()
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: ''
@@ -15,45 +17,37 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!token) {
-      setError('Invalid reset link. Please request a new password reset.')
+      toast.error('Invalid reset link. Please request a new password reset.')
     }
   }, [token])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setMessage('')
-    setError('')
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.')
+      toast.error('Passwords do not match.')
       setLoading(false)
       return
     }
 
-    // Validate password strength
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long.')
+      toast.error('Password must be at least 8 characters long.')
       setLoading(false)
       return
     }
 
     try {
       await authAPI.resetPassword(token, formData.password)
-      setMessage('Password has been reset successfully! Redirecting to login...')
-      toast.success('Password reset successful!')
+      toast.success('Password reset successful! Redirecting...')
       setTimeout(() => {
         navigate('/role-selection?action=login')
       }, 2000)
     } catch (err) {
-      setError(err.response?.data?.message || 'An error occurred. The reset link may be invalid or expired.')
-      toast.error(err.response?.data?.message || 'Reset failed.')
+      toast.error(err.response?.data?.message || 'Reset failed. The link may be invalid or expired.')
     } finally {
       setLoading(false)
     }
@@ -67,109 +61,74 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="login-page">
-      <div className="background-pattern"></div>
-      <div className="login-container glassmorphism neumorphic">
-        <button className="back-button" onClick={() => navigate('/role-selection?action=login')}>
-          <ArrowLeft size={20} />
+    <div className="auth-page">
+      <button type="button" className="theme-toggle-floating" onClick={toggleTheme} aria-label="Toggle theme">
+        {isDark ? <Sun size={16} /> : <Moon size={16} />}
+      </button>
+
+      <div className="auth-container">
+        <button className="auth-back" onClick={() => navigate('/role-selection?action=login')}>
+          <ArrowLeft size={15} />
           Back
         </button>
 
-        <div className="login-header">
-          <h1 className="login-title">Reset Password</h1>
-          <p className="login-subtitle">Enter your new password</p>
+        <div className="auth-header">
+          <h1>Reset Password</h1>
+          <p>Enter your new password</p>
         </div>
 
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="password" className="form-label">
-              <Lock size={18} />
+              <Lock size={15} />
               New Password
             </label>
-            <div className="password-input-wrapper">
+            <div className="password-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="password"
                 name="password"
-                className="form-input neumorphic-inset"
-                placeholder="Enter your new password"
+                className="form-input"
+                placeholder="Minimum 8 characters"
                 value={formData.password}
                 onChange={handleChange}
                 required
               />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
           <div className="form-group">
             <label htmlFor="confirmPassword" className="form-label">
-              <Lock size={18} />
+              <Lock size={15} />
               Confirm Password
             </label>
-            <div className="password-input-wrapper">
+            <div className="password-wrapper">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 id="confirmPassword"
                 name="confirmPassword"
-                className="form-input neumorphic-inset"
-                placeholder="Confirm your new password"
+                className="form-input"
+                placeholder="Re-enter your password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
               />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
-          {error && (
-            <div className="message error" style={{
-              padding: '12px',
-              borderRadius: '8px',
-              marginBottom: '16px',
-              backgroundColor: '#fee',
-              color: '#c33',
-              fontSize: '14px'
-            }}>
-              {error}
-            </div>
-          )}
-
-          {message && (
-            <div className="message success" style={{
-              padding: '12px',
-              borderRadius: '8px',
-              marginBottom: '16px',
-              backgroundColor: '#efe',
-              color: '#3c3',
-              fontSize: '14px'
-            }}>
-              {message}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="login-button glow-effect"
-            disabled={loading || !token}
-          >
+          <button type="submit" className="auth-submit" disabled={loading || !token}>
             {loading ? 'Resetting...' : 'Reset Password'}
           </button>
         </form>
 
-        <div className="login-footer">
-          <p>Remember your password? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/role-selection?action=login') }}>Sign In</a></p>
+        <div className="auth-link">
+          <p>Remember your password? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/role-selection?action=login') }}>Sign in</a></p>
         </div>
       </div>
     </div>

@@ -6,13 +6,13 @@ const BranchSelection = () => {
   const navigate = useNavigate()
 
   const branches = [
-    { id: 'cse', name: 'CSE', icon: Code, color: '#3b82f6' },
-    { id: 'csbs', name: 'CSBS', icon: Database, color: '#8b5cf6' },
-    { id: 'it', name: 'IT', icon: Code, color: '#06b6d4' },
-    { id: 'mechanical', name: 'Mechanical', icon: Wrench, color: '#f59e0b' },
-    { id: 'civil', name: 'Civil', icon: Building, color: '#10b981' },
-    { id: 'ar', name: 'A&R', icon: Palette, color: '#ec4899' },
-    { id: 'electrical', name: 'Electrical', icon: Zap, color: '#ef4444' }
+    { id: 'cse', name: 'CSE', icon: Code },
+    { id: 'csbs', name: 'CSBS', icon: Database },
+    { id: 'it', name: 'IT', icon: Code },
+    { id: 'mechanical', name: 'Mechanical', icon: Wrench },
+    { id: 'civil', name: 'Civil', icon: Building },
+    { id: 'ar', name: 'A&R', icon: Palette },
+    { id: 'electrical', name: 'Electrical', icon: Zap }
   ]
 
   const handleBranchSelect = (branch) => {
@@ -21,33 +21,33 @@ const BranchSelection = () => {
   }
 
   return (
-    <div className="branch-selection-page">
-      <div className="branch-container">
-        <button className="back-button" onClick={() => navigate('/teacher')}>
-          <ArrowLeft size={20} />
+    <div className="selection-page">
+      <div className="selection-container" style={{ maxWidth: '900px' }}>
+        <button className="selection-back" onClick={() => navigate('/teacher')}>
+          <ArrowLeft size={15} />
           Back to Dashboard
         </button>
 
-        <div className="branch-header">
+        <div className="selection-header">
           <h1>Select Branch</h1>
           <p>Choose a branch to view and manage projects</p>
         </div>
 
-        <div className="branches-grid">
+        <div className="branch-grid">
           {branches.map((branch) => {
             const Icon = branch.icon
             return (
-              <div
+              <button
                 key={branch.id}
-                className="branch-card glow-effect neumorphic"
+                className="selection-card"
                 onClick={() => handleBranchSelect(branch)}
               >
-                <div className="branch-icon" style={{ color: branch.color }}>
-                  <Icon size={48} />
+                <div className="selection-card-icon">
+                  <Icon size={28} />
                 </div>
-                <h2 className="branch-name">{branch.name}</h2>
-                <p className="branch-subtitle">Manage {branch.name} projects</p>
-              </div>
+                <h2>{branch.name}</h2>
+                <p>Manage {branch.name} projects</p>
+              </button>
             )
           })}
         </div>

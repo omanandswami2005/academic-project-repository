@@ -138,3 +138,26 @@
   }
 }
 
+@import './RoleSelection.css';
+
+.branch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.branch-grid .selection-card {
+  padding: 1.5rem 1rem;
+}
+
+.branch-grid .selection-card-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .branch-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

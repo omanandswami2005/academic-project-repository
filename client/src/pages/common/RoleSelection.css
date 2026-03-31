@@ -1,164 +1,128 @@
-.role-selection-page {
+.selection-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  background: var(--bg-root);
   padding: 2rem;
 }
 
-.background-pattern {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(135deg, rgba(65, 105, 225, 0.1) 0%, transparent 50%),
-    linear-gradient(45deg, rgba(107, 140, 232, 0.08) 0%, transparent 50%);
-  background-size: 120px 120px;
-  opacity: 0.6;
-  z-index: 0;
-}
-
-.role-selection-container {
+.selection-container {
   width: 100%;
-  max-width: 1000px;
-  padding: 3rem;
-  border-radius: 24px;
+  max-width: 800px;
   position: relative;
-  animation: fadeIn 0.5s ease-out;
 }
 
-.back-button {
-  position: absolute;
-  top: 1.5rem;
-  left: 1.5rem;
+.selection-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.813rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  margin-bottom: 2rem;
+  transition: all var(--transition-fast);
+}
+
+.selection-back:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.selection-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.selection-header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.selection-header p {
+  font-size: 0.938rem;
+  color: var(--text-muted);
+}
+
+.selection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.selection-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.5rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-align: center;
+  position: relative;
+  font-family: inherit;
+  color: inherit;
+}
+
+.selection-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.selection-card-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  margin: 0 auto 1.25rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: rgba(65, 105, 225, 0.1);
-  border: none;
-  color: var(--royal-blue);
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  padding: 0.75rem 1.25rem;
-  border-radius: 12px;
-  font-family: inherit;
-}
-
-.back-button:hover {
-  background: rgba(65, 105, 225, 0.2);
-  transform: translateX(-4px);
-}
-
-.role-selection-header {
-  text-align: center;
-  margin-bottom: 3rem;
-  margin-top: 1rem;
-}
-
-.role-selection-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--royal-blue);
-  margin-bottom: 0.75rem;
-}
-
-.role-selection-subtitle {
-  font-size: 1.1rem;
-  color: var(--grey-dark);
-  font-weight: 400;
-}
-
-.role-cards-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
-}
-
-.role-card {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 24px;
-  padding: 3rem 2rem;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-.role-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(65, 105, 225, 0.05) 0%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.role-card:hover::before {
-  opacity: 1;
-}
-
-.role-card:hover {
-  transform: translateY(-10px) scale(1.02);
-  box-shadow: var(--shadow-hover);
-}
-
-.role-card-icon {
-  margin-bottom: 1.5rem;
-  display: flex;
   justify-content: center;
-  transition: transform 0.3s ease;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  transition: transform var(--transition-base);
 }
 
-.role-card:hover .role-card-icon {
-  transform: scale(1.15) rotate(5deg);
+.selection-card:hover .selection-card-icon {
+  transform: scale(1.05);
 }
 
-.role-card-title {
-  font-size: 1.75rem;
+.selection-card h2 {
+  font-size: 1.125rem;
   font-weight: 600;
-  color: var(--royal-blue);
-  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
 }
 
-.role-card-description {
-  font-size: 1rem;
-  color: var(--grey-dark);
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
+.selection-card p {
+  font-size: 0.813rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 1rem;
 }
 
-.role-card-arrow {
-  font-size: 1.5rem;
-  color: var(--royal-blue);
+.selection-card-arrow {
+  font-size: 1.25rem;
+  color: var(--accent);
   opacity: 0;
-  transform: translateX(-10px);
-  transition: all 0.3s ease;
+  transition: opacity var(--transition-fast);
 }
 
-.role-card:hover .role-card-arrow {
+.selection-card:hover .selection-card-arrow {
   opacity: 1;
-  transform: translateX(0);
 }
 
 @media (max-width: 768px) {
-  .role-selection-container {
-    padding: 2rem 1.5rem;
-  }
-  
-  .role-selection-title {
-    font-size: 2rem;
-  }
-  
-  .role-cards-container {
+  .selection-grid {
     grid-template-columns: 1fr;
   }
-}
 
+  .selection-header h1 {
+    font-size: 1.5rem;
+  }
+}

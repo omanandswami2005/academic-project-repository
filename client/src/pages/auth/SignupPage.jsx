@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Mail, Lock, User, Hash, Building2, Calendar, Briefcase, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Mail, Lock, User, Hash, Building2, Calendar, Eye, EyeOff, Moon, Sun } from 'lucide-react'
 import { authAPI } from '../../services/api'
+import { useTheme } from '../../context/ThemeContext'
 import toast from 'react-hot-toast'
 import './SignupPage.css'
 
 const SignupPage = () => {
   const { role } = useParams()
   const navigate = useNavigate()
+  const { isDark, toggleTheme } = useTheme()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -19,11 +21,7 @@ const SignupPage = () => {
     confirmPassword: '',
     rollNo: '',
     branch: '',
-    year: '',
-    teacherId: '',
-    department: '',
-    company: '',
-    expertise: ''
+    year: ''
   })
 
   const branches = ['CSE', 'CSBS', 'IT', 'Mechanical', 'Civil', 'A&R', 'Electrical']
@@ -32,7 +30,7 @@ const SignupPage = () => {
   const roleTitles = {
     student: 'Student Signup',
     teacher: 'Teacher Signup',
-    expert: 'Industry Expert Signup'
+    expert: 'Expert Signup'
   }
 
   const handleSubmit = async (e) => {
@@ -79,31 +77,33 @@ const SignupPage = () => {
   }
 
   return (
-    <div className="signup-page">
-      <div className="background-pattern"></div>
-      <div className="signup-container glassmorphism neumorphic">
-        <button className="back-button" onClick={() => navigate('/role-selection?action=signup')}>
-          <ArrowLeft size={20} />
+    <div className="auth-page">
+      <button type="button" className="theme-toggle-floating" onClick={toggleTheme} aria-label="Toggle theme">
+        {isDark ? <Sun size={16} /> : <Moon size={16} />}
+      </button>
+
+      <div className="auth-container signup">
+        <button className="auth-back" onClick={() => navigate('/role-selection?action=signup')}>
+          <ArrowLeft size={15} />
           Back
         </button>
 
-        <div className="signup-header">
-          <h1 className="signup-title">{roleTitles[role] || 'Sign Up'}</h1>
-          <p className="signup-subtitle">Create your account to get started</p>
+        <div className="auth-header">
+          <h1>{roleTitles[role] || 'Sign Up'}</h1>
+          <p>Create your account to get started</p>
         </div>
 
-        <form className="signup-form" onSubmit={handleSubmit}>
-          {/* Name Field */}
+        <form className="auth-form signup-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="name" className="form-label">
-              <User size={18} />
+              <User size={15} />
               Full Name
             </label>
             <input
               type="text"
               id="name"
-              name="name" // Matches formData.name
-              className="form-input neumorphic-inset"
+              name="name"
+              className="form-input"
               placeholder="Enter your full name"
               value={formData.name}
               onChange={handleChange}
@@ -111,37 +111,36 @@ const SignupPage = () => {
             />
           </div>
 
-          {/* Email Field */}
           <div className="form-group">
             <label htmlFor="email" className="form-label">
-              <Mail size={18} />
+              <Mail size={15} />
               Email
             </label>
             <input
               type="email"
               id="email"
               name="email"
-              className="form-input neumorphic-inset"
-              placeholder="Enter your email"
+              className="form-input"
+              placeholder="you@example.com"
               value={formData.email}
               onChange={handleChange}
               required
             />
           </div>
 
-          {/* Role Specific Fields (Student) */}
           {role === 'student' && (
             <>
               <div className="form-group">
                 <label htmlFor="rollNo" className="form-label">
-                  <Hash size={18} />
-                  Roll Number
+                  <Hash size={15} />
+                  Roll Number / PRN
                 </label>
                 <input
                   type="text"
                   id="rollNo"
                   name="rollNo"
-                  className="form-input neumorphic-inset"
+                  className="form-input"
+                  placeholder="Enter your roll number"
                   value={formData.rollNo}
                   onChange={handleChange}
                   required
@@ -149,15 +148,15 @@ const SignupPage = () => {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label"><Building2 size={18} /> Branch</label>
-                  <select name="branch" className="form-input neumorphic-inset" onChange={handleChange} required>
+                  <label className="form-label"><Building2 size={15} /> Branch</label>
+                  <select name="branch" className="form-input" onChange={handleChange} required>
                     <option value="">Select Branch</option>
                     {branches.map(b => <option key={b} value={b}>{b}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label"><Calendar size={18} /> Year</label>
-                  <select name="year" className="form-input neumorphic-inset" onChange={handleChange} required>
+                  <label className="form-label"><Calendar size={15} /> Year</label>
+                  <select name="year" className="form-input" onChange={handleChange} required>
                     <option value="">Select Year</option>
                     {years.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -166,52 +165,53 @@ const SignupPage = () => {
             </>
           )}
 
-          {/* Password Fields */}
           <div className="form-group">
-            <label className="form-label"><Lock size={18} /> Password</label>
-            <div className="password-input-wrapper">
+            <label className="form-label"><Lock size={15} /> Password</label>
+            <div className="password-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
-                className="form-input neumorphic-inset"
+                className="form-input"
+                placeholder="Minimum 8 characters"
                 value={formData.password}
                 onChange={handleChange}
                 required
               />
               <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label"><Lock size={18} /> Confirm Password</label>
-            <div className="password-input-wrapper">
+            <label className="form-label"><Lock size={15} /> Confirm Password</label>
+            <div className="password-wrapper">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 name="confirmPassword"
-                className="form-input neumorphic-inset"
+                className="form-input"
+                placeholder="Re-enter your password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
               />
               <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
-          <button type="submit" className="signup-button glow-effect" disabled={loading}>
+          <button type="submit" className="auth-submit" disabled={loading}>
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 
-        <div className="signup-footer">
-          <p>Already have an account? <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/login/${role}`) }}>Login</a></p>
+        <div className="auth-link">
+          <p>Already have an account? <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/login/${role}`) }}>Sign in</a></p>
         </div>
       </div>
     </div>
   )
 }
 
-export default SignupPage;
+export default SignupPage

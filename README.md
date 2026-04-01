@@ -191,6 +191,7 @@ cd server && pnpm dev       # API server →  http://localhost:5000
 - **Rate limiting** on auth endpoints
 - **Helmet** security headers
 - **Analytics API** — skill radar, department stats, top students
+- **Dark Mode** — Toggle between light and dark themes
 
 ---
 
@@ -248,19 +249,7 @@ Expected output: `Results: 45 passed, 0 failed`
 ## 🔧 DNS Note
 
 If you're on a restricted network (e.g., college Wi-Fi) that blocks `*.neon.tech` DNS resolution, the server automatically applies a DNS fix via `scripts/dns-fix.js`. This preload patches Node's `dns.lookup` and the undici global dispatcher to use **Cloudflare 1.1.1.1** for Neon hostnames. No manual configuration needed — it runs automatically with all `pnpm start/dev/migrate` scripts.
-- **Project Phases** — 6-phase lifecycle tracking with star ratings
-- **File Uploads** — Upload project files (up to 50MB, 10 files)
-- **Password Reset** — Email-based password recovery
-- **Dark Mode** — Toggle between light and dark themes
 
-## 🛠️ Tech Stack
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React.js, Vite, React Router, Axios, Lucide Icons |
-| Backend | Node.js, Express.js |
-| Database | Postgres Sql |
-| Auth | bcryptjs, JWT |
-| Email | Nodemailer (Gmail) |
 
 ## 👥 Team
 Built by a team of 6-7 students for RSCOE.

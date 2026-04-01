@@ -5,6 +5,7 @@
   justify-content: center;
   background: var(--bg-root);
   padding: 2rem;
+  position: relative;
 }
 
 .selection-container {

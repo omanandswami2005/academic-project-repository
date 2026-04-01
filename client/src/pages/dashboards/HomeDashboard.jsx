@@ -9,7 +9,7 @@ import './HomeDashboard.css'
 const roleLinks = {
   student: [
     { label: 'My Projects', path: '/student', icon: FolderOpen },
-    { label: 'Track Phases', path: '/student', icon: CheckCircle },
+    { label: 'Task Board', path: '/student', icon: CheckCircle },
     { label: 'My Profile', path: '/profile', icon: Users },
   ],
   teacher: [
@@ -18,8 +18,8 @@ const roleLinks = {
     { label: 'Branch Overview', path: '/teacher/branches', icon: BarChart2 },
   ],
   expert: [
-    { label: 'Project Catalog', path: '/expert', icon: BookOpen },
-    { label: 'Top Students', path: '/expert', icon: Users },
+    { label: 'Project Catalog', path: '/expert#project-catalog', icon: BookOpen },
+    { label: 'Top Students', path: '/expert#top-students', icon: Users },
     { label: 'My Profile', path: '/profile', icon: BarChart2 },
   ],
   admin: [

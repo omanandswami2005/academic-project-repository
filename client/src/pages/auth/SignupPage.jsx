@@ -78,9 +78,11 @@ const SignupPage = () => {
 
   return (
     <div className="auth-page">
-      <button type="button" className="theme-toggle-floating" onClick={toggleTheme} aria-label="Toggle theme">
-        {isDark ? <Sun size={16} /> : <Moon size={16} />}
-      </button>
+      <div className="auth-top-bar">
+        <button type="button" className="theme-toggle-nav" onClick={toggleTheme} aria-label="Toggle theme">
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+      </div>
 
       <div className="auth-container signup">
         <button className="auth-back" onClick={() => navigate('/role-selection?action=signup')}>

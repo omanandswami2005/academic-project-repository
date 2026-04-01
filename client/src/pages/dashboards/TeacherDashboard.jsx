@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import './TeacherDashboard.css'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
 import { studentAPI, projectAPI, feedbackAPI } from '../../services/api'
 import toast from 'react-hot-toast'
@@ -353,12 +354,6 @@ const TeacherDashboard = () => {
               <p className="headline">Teacher Control Center</p>
               <h1>Projects · {selectedBranch} Branch</h1>
             </div>
-            <div className="branch-chip">
-              <span>{selectedBranch} Branch</span>
-              <button type="button" onClick={handleBranchChange}>
-                Change
-              </button>
-            </div>
           </header>
 
           <section className="search-bar" id="search">
@@ -598,10 +593,9 @@ const TeacherDashboard = () => {
                   value={announcementForm.content}
                   onChange={(e) => setAnnouncementForm(prev => ({ ...prev, content: e.target.value }))}
                 />
-                <button className="primary-btn" type="submit">
-                  <Plus size={16} />
+                <Button variant="primary" size="sm" type="submit" icon={<Plus size={16} />}>
                   Post Update
-                </button>
+                </Button>
               </form>
               <div className="announcement-list">
                 {announcements.map(item => (
@@ -728,10 +722,9 @@ const TeacherDashboard = () => {
                         value={commentDraft}
                         onChange={(e) => setCommentDraft(e.target.value)}
                       />
-                      <button className="primary-btn" type="button" onClick={handleAddComment}>
-                        <Send size={16} />
+                      <Button variant="primary" size="sm" icon={<Send size={16} />} onClick={handleAddComment}>
                         Send
-                      </button>
+                      </Button>
                     </div>
                   </div>
 

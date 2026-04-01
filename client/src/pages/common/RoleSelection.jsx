@@ -40,9 +40,11 @@ const RoleSelection = () => {
 
   return (
     <div className="selection-page">
-      <button type="button" className="theme-toggle-floating" onClick={toggleTheme} aria-label="Toggle theme">
-        {isDark ? <Sun size={16} /> : <Moon size={16} />}
-      </button>
+      <div className="auth-top-bar">
+        <button type="button" className="theme-toggle-nav" onClick={toggleTheme} aria-label="Toggle theme">
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+      </div>
 
       <div className="selection-container">
         <button className="selection-back" onClick={() => navigate('/')}>

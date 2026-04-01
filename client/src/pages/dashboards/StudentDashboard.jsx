@@ -4,7 +4,6 @@ import {
   Upload,
   FileText,
   MessageSquare,
-  TrendingUp,
   LogOut,
   CheckCircle,
   Clock,
@@ -12,10 +11,6 @@ import {
   CheckSquare,
   BarChart3,
   Activity,
-  User,
-  Mail,
-  Phone,
-  School,
   BookOpen,
   ExternalLink,
   Star,
@@ -25,8 +20,9 @@ import {
 } from 'lucide-react'
 import './StudentDashboard.css'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
-import { projectAPI, feedbackAPI, analyticsAPI } from '../../services/api'
+import { projectAPI, feedbackAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 
 
@@ -93,7 +89,7 @@ const skillResources = [
 const StudentDashboard = () => {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const [activeSection, setActiveSection] = useState('overview')
+  const [activeSection, setActiveSection] = useState('tasks')
   const [completion, setCompletion] = useState(0)
   const [notes, setNotes] = useState('')
 
@@ -313,14 +309,6 @@ const StudentDashboard = () => {
           <nav className="sidebar-nav">
             <button
               type="button"
-              className={`nav-item ${activeSection === 'overview' ? 'active' : ''}`}
-              onClick={() => handleSectionChange('overview')}
-            >
-              <TrendingUp size={18} />
-              Overview
-            </button>
-            <button
-              type="button"
               className={`nav-item ${activeSection === 'tasks' ? 'active' : ''}`}
               onClick={() => handleSectionChange('tasks')}
             >
@@ -367,14 +355,6 @@ const StudentDashboard = () => {
               <BookOpen size={18} />
               Skill Development
             </button>
-            <button
-              type="button"
-              className={`nav-item ${activeSection === 'profile' ? 'active' : ''}`}
-              onClick={() => handleSectionChange('profile')}
-            >
-              <User size={18} />
-              Profile
-            </button>
           </nav>
           <button className="logout-button" type="button" onClick={handleLogout}>
             <LogOut size={18} />
@@ -384,57 +364,137 @@ const StudentDashboard = () => {
 
         <main className="dashboard-main">
 
-          {activeSection === 'overview' && (
-            <section className="summary-card" id="overview">
-              <div>
-                <p className="summary-label">Project Title</p>
-                <h2>{myProjects.length > 0 ? myProjects[0].title : 'No project uploaded yet'}</h2>
-                <div className="summary-meta">
-                  <span>{myProjects.length > 0 && myProjects[0].domainTags?.length > 0 ? myProjects[0].domainTags.join(' • ') : 'No tags'}</span>
-                  <span>Status • {myProjects.length > 0 ? myProjects[0].status.replace('_', ' ') : 'No project'}</span>
-                </div>
-                <p className="summary-desc">{myProjects.length > 0 ? myProjects[0].description : 'Upload your first project to get started.'}</p>
-                <span className={`status-chip ${myProjects.length > 0 ? myProjects[0].status : 'pending'}`}>
-                  {myProjects.length > 0 ? myProjects[0].status.replace('_', ' ') : 'No Project'}
-                </span>
-              </div>
-              <div className="progress-ring" style={{ '--progress': `${completion}%` }}>
-                <div className="progress-ring-inner">
-                  <strong>{completion}%</strong>
-                  <small>Complete</small>
-                </div>
-              </div>
-            </section>
-          )}
-
           {activeSection === 'tasks' && (
             <section className="card task-board" id="tasks">
               <div className="section-header">
                 <div>
-                  <h3>Project Phases</h3>
+                  <h3>Kanban Board</h3>
                   <p>{myProjects.length > 0 ? `${(myProjects[0].phases || []).filter(p => p.completed).length} / ${(myProjects[0].phases || []).length} phases done` : 'No projects yet'}</p>
                 </div>
               </div>
-              <div className="task-list">
-                {myProjects.length > 0 ? (
-                  (myProjects[0].phases || []).map(phase => (
-                    <label key={phase.phaseNumber} className="task-card">
-                      <input
-                        type="checkbox"
-                        checked={phase.completed}
-                        onChange={() => togglePhase(myProjects[0].id, phase.phaseNumber)}
-                      />
-                      <div>
-                        <p>{phase.phaseName}</p>
-                        <small>{phase.description || 'No description'}</small>
+              {myProjects.length > 0 ? (() => {
+                const phases = myProjects[0].phases || []
+                const todo = phases.filter(p => !p.completed && !p.description)
+                const inProgress = phases.filter(p => !p.completed && p.description)
+                const done = phases.filter(p => p.completed)
+                return (
+                  <div className="kanban-board">
+                    <div className="kanban-column kanban-todo">
+                      <div className="kanban-column-header">
+                        <span className="kanban-dot kanban-dot--todo" />
+                        <h4>To Do</h4>
+                        <span className="kanban-count">{todo.length}</span>
                       </div>
-                      <span className={`priority ${phase.completed ? 'low' : 'high'}`}>{phase.completed ? 'Done' : 'Pending'}</span>
-                    </label>
-                  ))
-                ) : (
-                  <p className="empty-state">Upload a project to see phases here.</p>
-                )}
-              </div>
+                      <div className="kanban-cards">
+                        {todo.map(phase => (
+                          <div key={phase.phaseNumber} className="kanban-card">
+                            <div className="kanban-card-top">
+                              <span className="kanban-card-title">{phase.phaseName}</span>
+                              <span className="priority high">Pending</span>
+                            </div>
+                            <p className="kanban-card-desc">{phase.description || 'No description'}</p>
+                            <div className="kanban-card-actions">
+                              <button type="button" className="kanban-action-btn" onClick={() => startEditingPhase(myProjects[0].id, phase.phaseNumber)}>
+                                <Edit size={13} /> Add Details
+                              </button>
+                              <button type="button" className="kanban-action-btn done" onClick={() => togglePhase(myProjects[0].id, phase.phaseNumber)}>
+                                <CheckCircle size={13} /> Mark Done
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {todo.length === 0 && <p className="kanban-empty">No tasks in backlog</p>}
+                      </div>
+                    </div>
+                    <div className="kanban-column kanban-progress">
+                      <div className="kanban-column-header">
+                        <span className="kanban-dot kanban-dot--progress" />
+                        <h4>In Progress</h4>
+                        <span className="kanban-count">{inProgress.length}</span>
+                      </div>
+                      <div className="kanban-cards">
+                        {inProgress.map(phase => (
+                          <div key={phase.phaseNumber} className="kanban-card">
+                            <div className="kanban-card-top">
+                              <span className="kanban-card-title">{phase.phaseName}</span>
+                              <span className="priority medium">Working</span>
+                            </div>
+                            <p className="kanban-card-desc">{phase.description}</p>
+                            <div className="kanban-card-actions">
+                              <button type="button" className="kanban-action-btn" onClick={() => startEditingPhase(myProjects[0].id, phase.phaseNumber)}>
+                                <Edit size={13} /> Edit
+                              </button>
+                              <button type="button" className="kanban-action-btn done" onClick={() => togglePhase(myProjects[0].id, phase.phaseNumber)}>
+                                <CheckCircle size={13} /> Mark Done
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {inProgress.length === 0 && <p className="kanban-empty">Nothing in progress</p>}
+                      </div>
+                    </div>
+                    <div className="kanban-column kanban-done">
+                      <div className="kanban-column-header">
+                        <span className="kanban-dot kanban-dot--done" />
+                        <h4>Done</h4>
+                        <span className="kanban-count">{done.length}</span>
+                      </div>
+                      <div className="kanban-cards">
+                        {done.map(phase => (
+                          <div key={phase.phaseNumber} className="kanban-card kanban-card--done">
+                            <div className="kanban-card-top">
+                              <span className="kanban-card-title">{phase.phaseName}</span>
+                              <span className="priority low">Done</span>
+                            </div>
+                            <p className="kanban-card-desc">{phase.description || 'Completed'}</p>
+                            {phase.completedAt && (
+                              <small className="kanban-card-date">{new Date(phase.completedAt).toLocaleDateString()}</small>
+                            )}
+                            <div className="kanban-card-actions">
+                              <button type="button" className="kanban-action-btn undo" onClick={() => togglePhase(myProjects[0].id, phase.phaseNumber)}>
+                                <X size={13} /> Undo
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {done.length === 0 && <p className="kanban-empty">Nothing completed yet</p>}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })() : (
+                <p className="empty-state">Upload a project to see your Kanban board.</p>
+              )}
+
+              {/* Phase editing modal inline */}
+              {editingPhase && (
+                <div className="phase-edit-inline card">
+                  <h4>Edit Phase Description</h4>
+                  <textarea
+                    className="phase-description-input"
+                    rows="3"
+                    placeholder="Add description or notes for this phase..."
+                    value={phaseDescription}
+                    onChange={(e) => setPhaseDescription(e.target.value)}
+                  />
+                  <div className="phase-edit-actions">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={<Save size={14} />}
+                      onClick={() => {
+                        const [projId, phaseNum] = editingPhase.split('-')
+                        savePhaseDescription(projId, Number(phaseNum))
+                      }}
+                    >
+                      Save
+                    </Button>
+                    <Button variant="ghost" size="sm" icon={<X size={14} />} onClick={cancelEditing}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </section>
           )}
 
@@ -523,23 +583,16 @@ const StudentDashboard = () => {
                   )}
                 </div>
 
-                <button
+                <Button
                   type="submit"
-                  className="primary-btn submit-project-btn"
+                  variant="primary"
+                  fullWidth
                   disabled={uploading}
+                  loading={uploading}
+                  icon={!uploading ? <Upload size={16} /> : undefined}
                 >
-                  {uploading ? (
-                    <>
-                      <Clock size={16} />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload size={16} />
-                      Upload Project
-                    </>
-                  )}
-                </button>
+                  {uploading ? 'Uploading...' : 'Upload Project'}
+                </Button>
               </form>
 
               {myProjects.length > 0 && (
@@ -819,63 +872,6 @@ const StudentDashboard = () => {
             </section>
           )}
 
-          {activeSection === 'profile' && (
-            <section className="card profile-card" id="profile">
-              <div className="section-header">
-                <div>
-                  <h3>Profile Settings</h3>
-                  <p>Collaborators see the info below</p>
-                </div>
-              </div>
-              <div className="profile-grid">
-                <div className="profile-photo">
-                  <div className="avatar">{user?.username?.[0] || 'U'}</div>
-                  <button className="ghost-btn" type="button">Change photo</button>
-                </div>
-                <form className="profile-form">
-                  <label>
-                    Name
-                    <input type="text" defaultValue={user?.username || ''} />
-                  </label>
-                  <label>
-                    Email
-                    <div className="input-icon">
-                      <Mail size={16} />
-                      <input type="email" defaultValue={user?.email || ''} readOnly />
-                    </div>
-                  </label>
-                  <label>
-                    Contact
-                    <div className="input-icon">
-                      <Phone size={16} />
-                      <input type="tel" defaultValue={user?.mobile || ''} />
-                    </div>
-                  </label>
-                  <label>
-                    Bio
-                    <textarea rows="3" defaultValue=""></textarea>
-                  </label>
-                  <div className="profile-meta">
-                    <label>
-                      Branch
-                      <div className="input-icon disabled">
-                        <School size={16} />
-                        <input type="text" value={user?.branch || ''} disabled />
-                      </div>
-                    </label>
-                    <label>
-                      Year
-                      <div className="input-icon disabled">
-                        <User size={16} />
-                        <input type="text" value={user?.year || ''} disabled />
-                      </div>
-                    </label>
-                  </div>
-                  <button className="primary-btn" type="button">Save changes</button>
-                </form>
-              </div>
-            </section>
-          )}
         </main>
       </div>
     </DashboardLayout>

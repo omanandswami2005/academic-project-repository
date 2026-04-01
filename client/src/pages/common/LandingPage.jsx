@@ -42,18 +42,17 @@ const LandingPage = () => {
 
   return (
     <div className="landing-page">
-      <button
-        type="button"
-        className="theme-toggle-floating"
-        onClick={toggleTheme}
-        aria-label="Toggle theme"
-      >
-        {isDark ? <Sun size={16} /> : <Moon size={16} />}
-      </button>
-
       <header className="landing-nav">
         <span className="landing-logo">APRS</span>
         <div className="landing-nav-actions">
+          <button
+            type="button"
+            className="btn btn-icon theme-toggle-nav"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
           <button className="btn btn-ghost" onClick={() => navigate('/role-selection?action=login')}>
             Log in
           </button>

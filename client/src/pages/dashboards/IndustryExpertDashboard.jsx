@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   Download,
   FileText,
@@ -9,6 +10,7 @@ import {
   User
 } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
 import { projectAPI, feedbackAPI, analyticsAPI } from '../../services/api'
 import toast from 'react-hot-toast'
@@ -34,6 +36,7 @@ const evaluationTemplate = {
 
 const IndustryExpertDashboard = () => {
   const { user, logout } = useAuth()
+  const location = useLocation()
   const [filters, setFilters] = useState({
     branch: 'All',
     technology: 'All',
@@ -103,6 +106,19 @@ const IndustryExpertDashboard = () => {
     }
     fetchDeptStats()
   }, [deptBranch])
+
+  // Scroll to section when navigated with hash (e.g. /expert#top-students)
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '')
+      setTimeout(() => {
+        const el = document.getElementById(id)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 300)
+    }
+  }, [location.hash])
 
   // Map API projects to display format
   const allProjects = apiProjects.map(p => ({
@@ -298,7 +314,7 @@ const IndustryExpertDashboard = () => {
           </div>
         </section>
 
-        <section className="projects-section fade-up">
+        <section className="projects-section fade-up" id="project-catalog">
           <div className="section-heading">
             <h3>All Projects</h3>
             <p>{filteredProjects.length} projects match your filters</p>
@@ -342,7 +358,7 @@ const IndustryExpertDashboard = () => {
         </section>
 
         {/* ── Top Students Leaderboard ── */}
-        <section className="analytics-section card fade-up">
+        <section className="analytics-section card fade-up" id="top-students">
           <div className="analytics-header">
             <div className="section-heading">
               <h3><Trophy size={16} /> Top Students by Domain</h3>
@@ -572,7 +588,7 @@ const IndustryExpertDashboard = () => {
                       onChange={(e) => updateEvaluation('hireability', Number(e.target.value))}
                     />
                   </label>
-                  <button type="button" className="primary-btn" onClick={async () => {
+                  <Button variant="primary" size="sm" onClick={async () => {
                     if (!evaluation.feedback.trim()) {
                       toast.error('Please add feedback comments')
                       return
@@ -597,7 +613,7 @@ const IndustryExpertDashboard = () => {
                     }
                   }}>
                     Submit Evaluation
-                  </button>
+                  </Button>
                 </div>
                 <div className="modal-card-block">
                   <h4>Project Phases</h4>

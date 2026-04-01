@@ -4,22 +4,21 @@ import {
   Upload,
   FileText,
   MessageSquare,
-  LogOut,
   CheckCircle,
-  Clock,
-  Folder,
   CheckSquare,
-  BarChart3,
   Activity,
   BookOpen,
   ExternalLink,
   Star,
   Edit,
   Save,
-  X
+  X,
+  Folder,
+  BarChart3
 } from 'lucide-react'
 import './StudentDashboard.css'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import AppSidebar from '../../components/layout/AppSidebar'
 import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
 import { projectAPI, feedbackAPI } from '../../services/api'
@@ -301,66 +300,21 @@ const StudentDashboard = () => {
       onLogout={handleLogout}
     >
       <div className="student-dashboard">
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <h2>RSCOE</h2>
-            <p>Student Workspace</p>
-          </div>
-          <nav className="sidebar-nav">
-            <button
-              type="button"
-              className={`nav-item ${activeSection === 'tasks' ? 'active' : ''}`}
-              onClick={() => handleSectionChange('tasks')}
-            >
-              <CheckSquare size={18} />
-              Task Board
-            </button>
-            <button
-              type="button"
-              className={`nav-item ${activeSection === 'uploads' ? 'active' : ''}`}
-              onClick={() => handleSectionChange('uploads')}
-            >
-              <Upload size={18} />
-              Uploads
-            </button>
-            <button
-              type="button"
-              className={`nav-item ${activeSection === 'progress' ? 'active' : ''}`}
-              onClick={() => handleSectionChange('progress')}
-            >
-              <FileText size={18} />
-              Progress
-            </button>
-            <button
-              type="button"
-              className={`nav-item ${activeSection === 'feedback' ? 'active' : ''}`}
-              onClick={() => handleSectionChange('feedback')}
-            >
-              <MessageSquare size={18} />
-              Feedback
-            </button>
-            <button
-              type="button"
-              className={`nav-item ${activeSection === 'analytics' ? 'active' : ''}`}
-              onClick={() => handleSectionChange('analytics')}
-            >
-              <Activity size={18} />
-              Analytics
-            </button>
-            <button
-              type="button"
-              className={`nav-item ${activeSection === 'skills' ? 'active' : ''}`}
-              onClick={() => handleSectionChange('skills')}
-            >
-              <BookOpen size={18} />
-              Skill Development
-            </button>
-          </nav>
-          <button className="logout-button" type="button" onClick={handleLogout}>
-            <LogOut size={18} />
-            Logout
-          </button>
-        </aside>
+        <AppSidebar
+          items={[
+            { id: 'tasks', label: 'Task Board', icon: CheckSquare },
+            { id: 'uploads', label: 'Uploads', icon: Upload },
+            { id: 'progress', label: 'Progress', icon: FileText },
+            { id: 'feedback', label: 'Feedback', icon: MessageSquare },
+            { id: 'analytics', label: 'Analytics', icon: Activity },
+            { id: 'skills', label: 'Skill Development', icon: BookOpen },
+          ]}
+          activeSection={activeSection}
+          onSectionChange={handleSectionChange}
+          username={user?.username || user?.name}
+          role="Student"
+          onLogout={handleLogout}
+        />
 
         <main className="dashboard-main">
 

@@ -1,0 +1,190 @@
+/* ──────────────────────────────────────────
+   AppSidebar — custom styling for the parts
+   that live outside react-pro-sidebar internals
+   (header, footer, toggle btn, user / logout)
+   ──────────────────────────────────────────── */
+
+/* ── Header (title + collapse toggle) ── */
+.ps-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0.9rem 0.85rem;
+    border-bottom: 1px solid var(--border-subtle);
+    min-height: 56px;
+    gap: 0.5rem;
+}
+
+.ps-header--collapsed {
+    justify-content: center;
+    padding: 0.85rem 0.5rem;
+}
+
+.ps-header-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    overflow: hidden;
+}
+
+.ps-header-app {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.ps-header-role {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+
+/* ── Collapse toggle button ── */
+.ps-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ps-toggle:hover {
+    background: var(--accent-subtle);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ── Flex spacer pushes footer to bottom ── */
+.ps-spacer {
+    flex: 1;
+}
+
+/* ── Footer (user info + logout) ── */
+.ps-footer {
+    padding: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ps-footer--collapsed {
+    padding: 0.5rem;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Constrain children to available width in collapsed state */
+.ps-footer--collapsed .ps-avatar {
+    flex-shrink: 0;
+}
+
+.ps-footer--collapsed .ps-logout {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin: 0 auto;
+}
+
+/* ── User row ── */
+.ps-user {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.35rem 0.2rem;
+}
+
+/* ── Avatar circle ── */
+.ps-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--accent-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.ps-avatar--center {
+    margin: 0 auto;
+}
+
+/* ── Username / role text ── */
+.ps-user-info {
+    overflow: hidden;
+    min-width: 0;
+}
+
+.ps-user-info strong {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ps-user-info span {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    text-transform: capitalize;
+}
+
+/* ── Logout button ── */
+.ps-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: none;
+    background: var(--error-subtle);
+    color: var(--error);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    width: 100%;
+}
+
+.ps-logout:hover {
+    opacity: 0.8;
+}
+
+.ps-logout--icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin: 0 auto;
+    border-radius: 8px;
+}
+
+/* ── Separator item ── */
+.ps-separator {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 4px 8px;
+}
+
+/* ── Responsive: hide sidebar on very small screens ── */
+@media (max-width: 768px) {
+    .ps-footer .ps-user {
+        padding: 0.2rem;
+    }
+}

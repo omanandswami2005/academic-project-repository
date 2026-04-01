@@ -7,8 +7,9 @@
     "start": "node -r ./scripts/dns-fix.js src/index.js",
     "dev": "node --watch -r ./scripts/dns-fix.js src/index.js",
     "db:migrate": "node -r ./scripts/dns-fix.js scripts/migrate.js",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:push": "node -r ./scripts/dns-fix.js ./node_modules/drizzle-kit/bin.cjs push",
+    "db:studio": "node -r ./scripts/dns-fix.js ./node_modules/drizzle-kit/bin.cjs studio",
+    "db:clear": "node -r ./scripts/dns-fix.js scripts/clear-db.js"
   },
   "keywords": [],
   "author": "",

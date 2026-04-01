@@ -25,7 +25,12 @@ function customLookup(hostname, options, callback) {
             if (err || !addresses || addresses.length === 0) {
                 return dns._lookup(hostname, options, callback);
             }
-            callback(null, addresses[0], 4);
+            // pg may call with { all: true } — return array of objects
+            if (options && options.all) {
+                callback(null, addresses.map(a => ({ address: a, family: 4 })));
+            } else {
+                callback(null, addresses[0], 4);
+            }
         });
     } else {
         dns._lookup(hostname, options, callback);

@@ -43,6 +43,7 @@ const signup = async (req, res) => {
             branch: branch || null,
             prn: prn || null,
             mobile: mobile || null,
+            bio: '',
             year: year || null,
         }).returning({
             id: users.id,

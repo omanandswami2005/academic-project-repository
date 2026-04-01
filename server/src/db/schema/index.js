@@ -11,6 +11,7 @@ const users = pgTable('users', {
     branch: varchar('branch', { length: 50 }),
     prn: varchar('prn', { length: 50 }).unique(),
     mobile: varchar('mobile', { length: 20 }),
+    bio: text('bio').default(''),
     year: varchar('year', { length: 10 }),
     skills: jsonb('skills').default([]),
     avatarUrl: text('avatar_url'),
@@ -25,9 +26,8 @@ const users = pgTable('users', {
 ]);
 
 const usersRelations = relations(users, ({ many }) => ({
-    projects: many(projects, {
-        references: [projects.studentId],
-    }),
+    ownedProjects: many(projects, { relationName: 'studentProjects' }),
+    mentoredProjects: many(projects, { relationName: 'mentorProjects' }),
     projectMembers: many(projectMembers),
     feedback: many(feedback),
     notifications: many(notifications),
@@ -59,10 +59,12 @@ const projectsRelations = relations(projects, ({ one, many }) => ({
     student: one(users, {
         fields: [projects.studentId],
         references: [users.id],
+        relationName: 'studentProjects',
     }),
     mentor: one(users, {
         fields: [projects.mentorId],
         references: [users.id],
+        relationName: 'mentorProjects',
     }),
     phases: many(projectPhases),
     files: many(projectFiles),

@@ -5,7 +5,6 @@ import {
   Building2,
   FileText,
   Bell,
-  LogOut,
   Search,
   Filter,
   Users,
@@ -23,6 +22,7 @@ import {
 } from 'lucide-react'
 import './TeacherDashboard.css'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import AppSidebar from '../../components/layout/AppSidebar'
 import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
 import { studentAPI, projectAPI, feedbackAPI } from '../../services/api'
@@ -299,54 +299,23 @@ const TeacherDashboard = () => {
       onLogout={handleLogout}
     >
       <div className="teacher-dashboard">
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <h2>RSCOE</h2>
-            <p>Teacher Portal</p>
-          </div>
-          <nav className="sidebar-nav">
-            <button
-              className={`nav-item ${activeSection === 'overview' ? 'active' : ''}`}
-              type="button"
-              onClick={() => handleSectionChange('overview')}
-            >
-              <LayoutDashboard size={20} />
-              Overview
-            </button>
-            <button
-              className={`nav-item ${activeSection === 'students' ? 'active' : ''}`}
-              type="button"
-              onClick={() => handleSectionChange('students')}
-            >
-              <FileText size={20} />
-              Student Tracker
-            </button>
-            <button
-              className={`nav-item ${activeSection === 'reviews' ? 'active' : ''}`}
-              type="button"
-              onClick={() => handleSectionChange('reviews')}
-            >
-              <BookOpen size={20} />
-              Review Queue
-            </button>
-            <button
-              className={`nav-item ${activeSection === 'announcements' ? 'active' : ''}`}
-              type="button"
-              onClick={() => handleSectionChange('announcements')}
-            >
-              <Bell size={20} />
-              Announcements
-            </button>
-            <button className="nav-item subtle" type="button" onClick={handleBranchChange}>
-              <Building2 size={20} />
-              Change Branch
-            </button>
-          </nav>
-          <button className="logout-button" type="button" onClick={handleLogout}>
-            <LogOut size={20} />
-            Logout
-          </button>
-        </aside>
+        <AppSidebar
+          items={[
+            { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+            { id: 'students', label: 'Student Tracker', icon: FileText },
+            { id: 'reviews', label: 'Review Queue', icon: BookOpen },
+            { id: 'announcements', label: 'Announcements', icon: Bell },
+            { id: 'branch', label: 'Change Branch', icon: Building2, separator: false },
+          ]}
+          activeSection={activeSection}
+          onSectionChange={(id) => {
+            if (id === 'branch') { handleBranchChange(); return }
+            handleSectionChange(id)
+          }}
+          username={user?.username || user?.name}
+          role="Teacher"
+          onLogout={handleLogout}
+        />
 
         <main className="dashboard-main">
           <header className="dashboard-header">

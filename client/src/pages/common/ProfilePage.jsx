@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { userAPI, authAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import Button from '../../components/ui/Button'
 import './SupportPages.css'
 
 const ProfilePage = () => {
@@ -32,13 +33,14 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (user) {
-      setProfile({
+      setProfile(prev => ({
+        ...prev,
         name: user.username || '',
         email: user.email || '',
         phone: user.mobile || '',
-        bio: '',
+        bio: String(user.bio || ''),
         identifier: user.id || ''
-      })
+      }))
     }
   }, [user])
 
@@ -52,12 +54,13 @@ const ProfilePage = () => {
             name: data.user.username || '',
             email: data.user.email || '',
             phone: data.user.mobile || '',
-            bio: '',
+            bio: String(data.user.bio || ''),
             identifier: data.user.id || ''
           })
         }
       } catch (err) {
         // Fall back to cached user from AuthContext
+        console.error('Failed to fetch profile:', err)
       }
     }
     fetchProfile()
@@ -185,20 +188,30 @@ const ProfilePage = () => {
                 onChange={(e) => handleChange('bio', e.target.value)}
               />
             </label>
-            <button type="button" className="primary-btn" onClick={async () => {
-              try {
-                const { data } = await userAPI.updateProfile({
-                  username: profile.name,
-                  mobile: profile.phone,
-                })
-                updateUser(data.user)
-                toast.success('Profile updated!')
-              } catch (err) {
-                toast.error(err.response?.data?.message || 'Failed to update profile.')
-              }
-            }}>
+            <Button
+              variant="primary"
+              size="md"
+              type="button"
+              onClick={async () => {
+                try {
+                  const updatePayload = {
+                    username: profile.name || '',
+                    mobile: profile.phone || '',
+                    bio: String(profile.bio || ''),
+                  }
+                  console.log('Sending update payload:', updatePayload)
+                  const { data } = await userAPI.updateProfile(updatePayload)
+                  console.log('Update response:', data)
+                  updateUser(data.user)
+                  toast.success('Profile updated!')
+                } catch (err) {
+                  console.error('Update error:', err)
+                  toast.error(err.response?.data?.message || 'Failed to update profile.')
+                }
+              }}
+            >
               Save Changes
-            </button>
+            </Button>
           </form>
         </section>
 

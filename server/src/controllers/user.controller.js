@@ -17,6 +17,7 @@ const getProfile = async (req, res) => {
             branch: users.branch,
             prn: users.prn,
             mobile: users.mobile,
+            bio: users.bio,
             year: users.year,
             skills: users.skills,
             avatarUrl: users.avatarUrl,
@@ -44,14 +45,19 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const db = getDB();
-        const { username, mobile, skills, year, prn } = req.body;
+        const { username, mobile, bio, skills, year, prn } = req.body;
+
+        logger.info('USER', `Received update: username=${username}, mobile=${mobile}, bio="${bio}", skills=${JSON.stringify(skills)}, year=${year}, prn=${prn}`);
 
         const updateData = { updatedAt: new Date() };
         if (username) updateData.username = username;
         if (mobile !== undefined) updateData.mobile = mobile;
+        if (bio !== undefined) updateData.bio = bio;
         if (skills !== undefined) updateData.skills = skills;
         if (year !== undefined) updateData.year = year;
         if (prn !== undefined) updateData.prn = prn;
+
+        logger.info('USER', `Update data to be saved: ${JSON.stringify(updateData)}`);
 
         const [updated] = await db.update(users)
             .set(updateData)
@@ -64,11 +70,13 @@ const updateProfile = async (req, res) => {
                 branch: users.branch,
                 prn: users.prn,
                 mobile: users.mobile,
+                bio: users.bio,
                 year: users.year,
                 skills: users.skills,
                 avatarUrl: users.avatarUrl,
             });
 
+        logger.info('USER', `Updated user bio in DB: "${updated.bio}"`);
         logger.success('USER', `Profile updated for id=${req.user.id}`);
         res.status(200).json({
             message: 'Profile updated successfully',

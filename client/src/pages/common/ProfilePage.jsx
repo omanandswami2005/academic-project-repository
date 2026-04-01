@@ -30,41 +30,37 @@ const ProfilePage = () => {
   const [passwordMessage, setPasswordMessage] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
 
   useEffect(() => {
-    if (user) {
-      setProfile(prev => ({
-        ...prev,
-        name: user.username || '',
-        email: user.email || '',
-        phone: user.mobile || '',
-        bio: String(user.bio || ''),
-        identifier: user.id || ''
-      }))
-    }
-  }, [user])
-
-  // Fetch fresh profile from API on mount
-  useEffect(() => {
-    const fetchProfile = async () => {
+    let isMounted = true;
+    const loadProfile = async () => {
       try {
         const { data } = await userAPI.getProfile()
-        if (data.user) {
+        if (isMounted && data.user) {
           setProfile({
-            name: data.user.username || '',
-            email: data.user.email || '',
-            phone: data.user.mobile || '',
+            name: String(data.user.username || ''),
+            email: String(data.user.email || ''),
+            phone: String(data.user.mobile || ''),
             bio: String(data.user.bio || ''),
-            identifier: data.user.id || ''
+            identifier: String(data.user.id || '')
           })
         }
       } catch (err) {
-        // Fall back to cached user from AuthContext
-        console.error('Failed to fetch profile:', err)
+        if (isMounted && user) {
+          setProfile({
+            name: String(user.username || ''),
+            email: String(user.email || ''),
+            phone: String(user.mobile || ''),
+            bio: String(user.bio || ''),
+            identifier: String(user.id || '')
+          })
+        }
       }
     }
-    fetchProfile()
-  }, [])
+    loadProfile()
+    return () => { isMounted = false }
+  }, [user])
 
   const handleChange = (field, value) => {
     setProfile(prev => ({ ...prev, [field]: value }))
@@ -140,6 +136,8 @@ const ProfilePage = () => {
               <strong>{profile.name || 'User'}</strong>
               <p>{profile.bio || 'No bio available'}</p>
               <span>Email • {profile.email || 'N/A'}</span>
+              <br/>
+              <span>Phone • {profile.phone || 'No phone number added'}</span>
             </div>
           </div>
         </section>
@@ -180,33 +178,51 @@ const ProfilePage = () => {
                 />
               </div>
             </label>
-            <label>
-              Bio
+            <div className="form-group-bio">
+              <label>Bio</label>
               <textarea
                 rows="3"
                 value={profile.bio}
                 onChange={(e) => handleChange('bio', e.target.value)}
+                style={{ width: '100%' }}
               />
-            </label>
+              <div style={{
+                textAlign: 'right',
+                fontSize: '0.8rem',
+                color: profile.bio.length > 500 ? 'var(--error, red)' : (profile.bio.length > 450 ? 'var(--error, red)' : 'var(--text-muted, gray)')
+              }}>
+                {profile.bio.length} / 500 characters
+              </div>
+            </div>
             <Button
               variant="primary"
               size="md"
               type="button"
+              loading={savingProfile}
+              disabled={savingProfile || profile.bio.length > 500}
               onClick={async () => {
+                setSavingProfile(true)
                 try {
                   const updatePayload = {
-                    username: profile.name || '',
-                    mobile: profile.phone || '',
-                    bio: String(profile.bio || ''),
+                    username: String(profile.name || ''),
+                    mobile: String(profile.phone || ''),
+                    bio: String(profile.bio ?? ''),
                   }
-                  console.log('Sending update payload:', updatePayload)
                   const { data } = await userAPI.updateProfile(updatePayload)
-                  console.log('Update response:', data)
                   updateUser(data.user)
+                  setProfile(prev => ({
+                    ...prev,
+                    name: String(data.user.username || ''),
+                    email: String(data.user.email || ''),
+                    phone: String(data.user.mobile || ''),
+                    bio: String(data.user.bio || ''),
+                    identifier: String(data.user.id || '')
+                  }))
                   toast.success('Profile updated!')
                 } catch (err) {
-                  console.error('Update error:', err)
                   toast.error(err.response?.data?.message || 'Failed to update profile.')
+                } finally {
+                  setSavingProfile(false)
                 }
               }}
             >

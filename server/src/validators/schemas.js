@@ -50,6 +50,7 @@ const refreshTokenSchema = z.object({
 // ─── User Schemas ───
 const updateProfileSchema = z.object({
     username: z.string().min(2).max(100).optional(),
+    bio: z.string().max(500).optional(),
     mobile: z.string().max(20).optional(),
     skills: z.array(z.string()).optional(),
     year: z.string().max(10).optional(),

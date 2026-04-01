@@ -1,4 +1,4 @@
-const { eq } = require('drizzle-orm');
+const { eq, ilike, or } = require('drizzle-orm');
 const { getDB } = require('../config/db');
 const { users } = require('../db/schema');
 const logger = require('../utils/logger');
@@ -47,7 +47,6 @@ const updateProfile = async (req, res) => {
         const db = getDB();
         const { username, mobile, bio, skills, year, prn } = req.body;
 
-        logger.info('USER', `Received update: username=${username}, mobile=${mobile}, bio="${bio}", skills=${JSON.stringify(skills)}, year=${year}, prn=${prn}`);
 
         const updateData = { updatedAt: new Date() };
         if (username) updateData.username = username;
@@ -57,7 +56,6 @@ const updateProfile = async (req, res) => {
         if (year !== undefined) updateData.year = year;
         if (prn !== undefined) updateData.prn = prn;
 
-        logger.info('USER', `Update data to be saved: ${JSON.stringify(updateData)}`);
 
         const [updated] = await db.update(users)
             .set(updateData)
@@ -76,7 +74,6 @@ const updateProfile = async (req, res) => {
                 avatarUrl: users.avatarUrl,
             });
 
-        logger.info('USER', `Updated user bio in DB: "${updated.bio}"`);
         logger.success('USER', `Profile updated for id=${req.user.id}`);
         res.status(200).json({
             message: 'Profile updated successfully',
@@ -123,4 +120,41 @@ const getUserById = async (req, res) => {
     }
 };
 
-module.exports = { getProfile, updateProfile, getUserById };
+/**
+ * GET /api/users/search
+ */
+const searchUsers = async (req, res) => {
+    try {
+        const db = getDB();
+        const { q } = req.query;
+
+        if (!q || typeof q !== 'string') {
+            return res.status(400).json({ message: 'Query parameter q is required.' });
+        }
+
+        const searchTerm = `%${q}%`;
+
+        const result = await db.select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+            role: users.role,
+            branch: users.branch,
+        })
+        .from(users)
+        .where(
+            or(
+                ilike(users.username, searchTerm),
+                ilike(users.email, searchTerm)
+            )
+        )
+        .limit(20);
+
+        res.status(200).json({ users: result });
+    } catch (error) {
+        logger.error('USER', 'Search users failed', error);
+        res.status(500).json({ message: 'Internal Server Error.' });
+    }
+};
+
+module.exports = { getProfile, updateProfile, getUserById, searchUsers };

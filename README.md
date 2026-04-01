@@ -258,7 +258,7 @@ If you're on a restricted network (e.g., college Wi-Fi) that blocks `*.neon.tech
 |-------|-----------|
 | Frontend | React.js, Vite, React Router, Axios, Lucide Icons |
 | Backend | Node.js, Express.js |
-| Database | MongoDB, Mongoose |
+| Database | Postgres Sql |
 | Auth | bcryptjs, JWT |
 | Email | Nodemailer (Gmail) |
 

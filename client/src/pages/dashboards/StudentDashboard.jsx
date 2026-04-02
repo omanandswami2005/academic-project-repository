@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Star,
   Edit,
+  Trash2,
   Save,
   X,
   Folder,
@@ -103,6 +104,7 @@ const StudentDashboard = () => {
   const [uploading, setUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [myProjects, setMyProjects] = useState([])
+  const [projectsLoading, setProjectsLoading] = useState(true)
   const [editingPhase, setEditingPhase] = useState(null)
   const [phaseDescription, setPhaseDescription] = useState('')
   const [feedbackData, setFeedbackData] = useState([])
@@ -111,6 +113,7 @@ const StudentDashboard = () => {
   const fetchMyProjects = async () => {
     if (!user) return
     try {
+      setProjectsLoading(true)
       const { data } = await projectAPI.getByStudent(user.id)
       setMyProjects(data.projects || [])
       // Calculate overall completion from phases
@@ -127,8 +130,10 @@ const StudentDashboard = () => {
           setFeedbackData(fbRes.data?.feedback || [])
         } catch { /* no feedback yet */ }
       }
+      setProjectsLoading(false)
     } catch (error) {
       console.error('Error fetching projects:', error)
+      setProjectsLoading(false)
     }
   }
 
@@ -201,6 +206,47 @@ const StudentDashboard = () => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to upload project.'
       toast.error(errorMessage)
       setUploading(false)
+    }
+  }
+
+  // Delete project
+  const handleDeleteProject = async (projectId) => {
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      try {
+        await projectAPI.delete(projectId)
+        toast.success('Project deleted successfully')
+        fetchMyProjects()
+      } catch (error) {
+        toast.error('Failed to delete project')
+      }
+    }
+  }
+
+  // State for inline editing project
+  const [editingProject, setEditingProject] = useState(null)
+  const [editForm, setEditForm] = useState({ title: '', description: '', domainTags: '' })
+
+  const startEditingProject = (project) => {
+    setEditingProject(project.id)
+    setEditForm({
+      title: project.title,
+      description: project.description,
+      domainTags: project.domainTags ? project.domainTags.join(', ') : ''
+    })
+  }
+
+  const saveProjectEdit = async (projectId) => {
+    try {
+      await projectAPI.update(projectId, {
+        title: editForm.title,
+        description: editForm.description,
+        domainTags: editForm.domainTags.split(',').map(t => t.trim()).filter(Boolean)
+      })
+      toast.success('Project updated successfully')
+      setEditingProject(null)
+      fetchMyProjects()
+    } catch (error) {
+      toast.error('Failed to update project')
     }
   }
 
@@ -549,7 +595,33 @@ const StudentDashboard = () => {
                 </Button>
               </form>
 
-              {myProjects.length > 0 && (
+              {!projectsLoading && myProjects.length === 0 && (
+                <div style={{ padding: '32px', textAlign: 'center', backgroundColor: 'var(--bg-secondary, #f9fafb)', borderRadius: '8px', marginTop: '16px' }}>
+                  <Folder size={48} style={{ color: 'var(--text-muted, gray)', margin: '0 auto 16px' }} />
+                  <h4 style={{ marginBottom: '8px' }}>No projects yet</h4>
+                  <p style={{ color: 'var(--text-muted, gray)', marginBottom: '16px' }}>You haven't uploaded any projects. Upload one above to get started.</p>
+                  <Button variant="primary" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Upload a Project</Button>
+                </div>
+              )}
+
+
+
+              {projectsLoading && myProjects.length === 0 && (
+                <div className="my-projects-section">
+                  <h4>My Uploaded Projects</h4>
+                  <div className="projects-list">
+                    {[1, 2].map(i => (
+                      <div key={i} className="project-item" style={{ animation: 'pulse 1.5s infinite', backgroundColor: 'var(--bg-secondary, #f9fafb)' }}>
+                        <div style={{ height: '24px', backgroundColor: 'var(--border-subtle, #e5e7eb)', borderRadius: '4px', width: '40%', marginBottom: '12px' }} />
+                        <div style={{ height: '16px', backgroundColor: 'var(--border-subtle, #e5e7eb)', borderRadius: '4px', width: '80%', marginBottom: '8px' }} />
+                        <div style={{ height: '16px', backgroundColor: 'var(--border-subtle, #e5e7eb)', borderRadius: '4px', width: '60%' }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!projectsLoading && myProjects.length > 0 && (
                 <div className="my-projects-section">
                   <h4>My Uploaded Projects</h4>
                   <div className="projects-list">
@@ -559,23 +631,53 @@ const StudentDashboard = () => {
 
                       return (
                         <div key={project.id} className="project-item">
-                          <div className="project-item-header">
+                          <div className="project-item-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                              <h5>{project.title}</h5>
+                              {editingProject === project.id ? (
+                                <input className="form-input" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})} />
+                              ) : (
+                                <h5>{project.title}</h5>
+                              )}
                               {renderStars(stars)}
                             </div>
-                            <span className={`status-chip ${project.status}`}>
-                              {project.status.replace('_', ' ')}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span className={`status-chip ${project.status}`}>
+                                {project.status.replace('_', ' ')}
+                              </span>
+                              <Button variant="ghost" size="sm" onClick={() => editingProject === project.id ? setEditingProject(null) : startEditingProject(project)} aria-label="Edit project">
+                                <Edit size={16} />
+                              </Button>
+                              <Button variant="danger" size="sm" onClick={() => handleDeleteProject(project.id)} aria-label="Delete project">
+                                <Trash2 size={16} />
+                              </Button>
+                            </div>
                           </div>
-                          <p className="project-description">{project.description}</p>
+                          {editingProject === project.id ? (
+                            <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+                              <textarea className="form-textarea" rows="3" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} />
+                              <input className="form-input" style={{ marginTop: '8px' }} placeholder="Domain Tags (comma separated)" value={editForm.domainTags} onChange={e => setEditForm({...editForm, domainTags: e.target.value})} />
+                              <Button variant="primary" size="sm" style={{ marginTop: '8px' }} onClick={() => saveProjectEdit(project.id)}>Save Changes</Button>
+                            </div>
+                          ) : (
+                            <p className="project-description">{project.description}</p>
+                          )}
                           <div className="project-meta">
                             <small>Uploaded: {new Date(project.createdAt).toLocaleDateString()}</small>
                             <small>ID: {project.uniqueProjectId}</small>
                           </div>
 
                           <div className="phases-section">
-                            <h5 className="phases-title">Project Phases</h5>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <h5 className="phases-title" style={{ margin: 0 }}>Project Phases</h5>
+                              <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{phases.filter(p => p.completed).length}/{phases.length} phases complete — {Math.round((phases.filter(p => p.completed).length / Math.max(phases.length, 1)) * 100)}%</span>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
+                              {phases.map(phase => (
+                                <div key={`bar-${phase.phaseNumber}`} style={{ flex: 1, height: '8px', borderRadius: '4px', backgroundColor: phase.completed ? 'var(--accent, #4F46E5)' : 'var(--border-primary, #e5e7eb)' }} />
+                              ))}
+                            </div>
+
                             <div className="phases-list">
                               {phases.map(phase => {
                                 const isEditing = editingPhase === `${project.id}-${phase.phaseNumber}`
@@ -757,35 +859,35 @@ const StudentDashboard = () => {
               </div>
               <div className="analytics-grid">
                 <div className="analytics-tile">
-                  <div className="analytics-icon"><CheckSquare size={18} /></div>
-                  <div>
-                    <p>Phase completion</p>
-                    <strong>{completion}%</strong>
-                    <small>overall</small>
-                  </div>
-                </div>
-                <div className="analytics-tile">
                   <div className="analytics-icon"><Folder size={18} /></div>
                   <div>
-                    <p>Total projects</p>
+                    <p>Total Projects</p>
                     <strong>{myProjects.length}</strong>
                     <small>uploaded</small>
                   </div>
                 </div>
                 <div className="analytics-tile">
+                  <div className="analytics-icon"><CheckSquare size={18} /></div>
+                  <div>
+                    <p>Approved</p>
+                    <strong>{myProjects.filter(p => p.status === 'approved').length}</strong>
+                    <small>projects</small>
+                  </div>
+                </div>
+                <div className="analytics-tile">
                   <div className="analytics-icon"><BarChart3 size={18} /></div>
                   <div>
-                    <p>Total stars</p>
-                    <strong>{myProjects.reduce((sum, p) => sum + (p.stars || 0), 0)}</strong>
-                    <small>earned</small>
+                    <p>Under Review</p>
+                    <strong>{myProjects.filter(p => p.status === 'under_review').length}</strong>
+                    <small>projects</small>
                   </div>
                 </div>
                 <div className="analytics-tile">
                   <div className="analytics-icon"><MessageSquare size={18} /></div>
                   <div>
-                    <p>Feedback received</p>
-                    <strong>{feedbackData.length}</strong>
-                    <small>reviews</small>
+                    <p>Pending</p>
+                    <strong>{myProjects.filter(p => p.status === 'pending').length}</strong>
+                    <small>projects</small>
                   </div>
                 </div>
               </div>

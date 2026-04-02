@@ -51,6 +51,7 @@ const signup = async (req, res) => {
             email: users.email,
             role: users.role,
             branch: users.branch,
+            bio: users.bio,
         });
 
         logger.auth(`New user registered: ${newUser.email} (${newUser.role})`, `id=${newUser.id}`);

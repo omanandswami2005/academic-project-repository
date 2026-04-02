@@ -1,0 +1,18 @@
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[2m[90m[21:38:58.577][0m ❌  [41m[97m[1m ERROR [0m [96m[1m[DB][0m [91mDatabase connection failed[0m
+[2m[90mError: DATABASE_URL environment variable is not set
+    at getDB (/app/server/src/config/db.js:12:19)
+    at testConnection (/app/server/src/config/db.js:22:26)
+    at /app/server/src/index.js:9:29
+    at Object.<anonymous> (/app/server/src/index.js:20:3)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)[0m
+[2m[90m[21:38:58.577][0m ⚠️   [43m[97m[1m WARN  [0m [96m[1m[DB][0m [93mServer will start but database operations may fail![0m
+[2m[90m[21:38:58.577][0m ⚠️   [43m[97m[1m WARN  [0m [96m[1m[DB][0m [93mSet DATABASE_URL in your .env file to your Neon PostgreSQL connection string[0m
+[2m[90m[21:38:58.581][0m 🚀  [42m[97m[1m START [0m [92mServer running on port 5000[0m
+[2m[90m[21:38:58.581][0m 🚀  [42m[97m[1m START [0m [92mAPI base: http://localhost:5000/api[0m
+[2m[90m[21:38:58.581][0m 🔷  [44m[97m[1m INFO  [0m [96m[1m[ENV][0m [97mEnvironment: development[0m

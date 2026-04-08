@@ -43,9 +43,11 @@ const projects = pgTable('projects', {
     domainTags: jsonb('domain_tags').default([]),
     studentId: integer('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     mentorId: integer('mentor_id').references(() => users.id),
-    status: varchar('status', { length: 30 }).notNull().default('pending'), // pending, under_review, approved, needs_revision
+    mentorStatus: varchar('mentor_status', { length: 20 }).default('none'), // none, requested, accepted, reassigned
+    status: varchar('status', { length: 30 }).notNull().default('pending'), // pending, under_review, approved, needs_revision, archived
     visibility: varchar('visibility', { length: 20 }).notNull().default('private'), // public, private, department
     stars: integer('stars').notNull().default(0),
+    forkedFromId: integer('forked_from_id').references(() => projects.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [
@@ -70,6 +72,12 @@ const projectsRelations = relations(projects, ({ one, many }) => ({
     files: many(projectFiles),
     members: many(projectMembers),
     feedback: many(feedback),
+    forkedFrom: one(projects, {
+        fields: [projects.forkedFromId],
+        references: [projects.id],
+        relationName: 'forkedProjects',
+    }),
+    forks: many(projects, { relationName: 'forkedProjects' }),
 }));
 
 // ─── Project Phases ───
@@ -81,6 +89,7 @@ const projectPhases = pgTable('project_phases', {
     completed: boolean('completed').notNull().default(false),
     completedAt: timestamp('completed_at'),
     description: text('description').default(''),
+    deadline: timestamp('deadline'),
 }, (table) => [
     index('phases_project_idx').on(table.projectId),
 ]);
@@ -119,6 +128,7 @@ const projectMembers = pgTable('project_members', {
     projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
     userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     roleInGroup: varchar('role_in_group', { length: 30 }).default('member'), // leader, member
+    status: varchar('status', { length: 20 }).default('accepted'), // invited, accepted, declined
     joinedAt: timestamp('joined_at').defaultNow().notNull(),
 }, (table) => [
     index('members_project_idx').on(table.projectId),

@@ -42,10 +42,10 @@
 
 ### 2.1 Tables
 - [x] `users` table (id, username, email, password_hash, role, branch, prn, mobile, year, avatar_url, created_at, updated_at)
-- [x] `projects` table (id, unique_project_id, title, description, domain_tags, student_id, mentor_id, status, visibility, stars, created_at, updated_at)
-- [x] `project_phases` table (id, project_id, phase_number, phase_name, completed, completed_at, description)
+- [x] `projects` table (id, unique_project_id, title, description, domain_tags, student_id, mentor_id, **mentor_status**, status, visibility, stars, **forked_from_id**, created_at, updated_at)
+- [x] `project_phases` table (id, project_id, phase_number, phase_name, completed, completed_at, description, **deadline**)
 - [x] `project_files` table (id, project_id, filename, original_name, r2_key, file_size, file_type, uploaded_at)
-- [x] `project_members` table (id, project_id, user_id, role_in_group)
+- [x] `project_members` table (id, project_id, user_id, role_in_group, **status**)
 - [x] `feedback` table (id, project_id, reviewer_id, rating, comment, rubric_scores_json, created_at)
 - [x] `notifications` table (id, user_id, title, message, type, read, created_at)
 - [x] `refresh_tokens` table (id, user_id, token_hash, expires_at, created_at)
@@ -101,6 +101,23 @@
 - [x] `GET /api/projects/student/:studentId` — student's projects
 - [x] `GET /api/projects/search` — full-text search across departments
 
+### 3.4a Projects API — New Features (FR3/7/9/13/15)
+- [x] `POST /api/projects/:id/fork` — fork an approved/archived project (student)
+- [x] `POST /api/projects/:id/invite` — invite member by email/userId (owner, max 3)
+- [x] `GET /api/projects/invitations/me` — list pending invitations for current user
+- [x] `PATCH /api/projects/invitations/:id` — accept/decline invitation
+- [x] `PATCH /api/projects/:id/mentor` — student requests a teacher as mentor
+- [x] `PATCH /api/projects/:id/mentor/respond` — teacher accepts/declines mentor request
+- [x] `PATCH /api/projects/:id/deadlines` — teacher sets phase deadlines [{phaseNumber, deadline}]
+- [x] `GET /api/projects/overdue` — get overdue (incomplete + past deadline) phases, optional ?studentId filter
+
+### 3.4b Portfolio API (FR27)
+- [x] `GET /api/portfolio/:userId` — public student portfolio (projects, stats, profile)
+
+### 3.4c Reports API (FR29)
+- [x] `GET /api/reports/department/:branch` — department report (student count, project count, status breakdown, domain distribution, phase completion rates) — teacher/admin only
+- [x] `GET /api/reports/student/:id` — individual student report (projects, phases, files, members, completion rate) — teacher/admin only
+
 ### 3.5 Students API
 - [x] `GET /api/students` — list all students (teachers/admin)
 - [x] `GET /api/students/branch/:branch` — students by branch with project info
@@ -141,6 +158,9 @@
 - [x] Add request interceptor for auth headers
 - [x] Add response interceptor for 401 → refresh flow
 - [x] Centralize API calls in `services/` folder
+- [x] Fork, invite, invitation, mentor, deadline, overdue API methods (FR3/7/9/13/15)
+- [x] Portfolio API methods (FR27)
+- [x] Report API methods (FR29)
 
 ### 4.3 Pages — Auth
 - [x] Login page — connects to real API
@@ -161,6 +181,11 @@
 - [x] Project list from real API
 - [x] Skill resources section
 - [x] Progress analytics with real data
+- [x] Invitations section — view & accept/decline invites (FR7)
+- [x] Browse & Fork section — list public projects, fork approved ones (FR3/33)
+- [x] Invite member by email on project (FR7)
+- [x] Request mentor button with teacher dropdown (FR9)
+- [x] Phase deadline & overdue badges display (FR13/15)
 
 ### 4.6 Pages — Teacher Dashboard
 - [x] Branch selection loads real students
@@ -168,6 +193,14 @@
 - [x] Project review queue from real API
 - [x] Status update (approve/revise) via real API
 - [x] Feedback submission via real API
+- [x] Deadline Management section — set phase deadlines per project (FR13)
+- [x] Mentor Requests section — accept/decline mentor requests (FR9)
+- [x] Reports section — department stats, phase completion bars, domain distribution (FR29)
+- [x] Overdue alert banner for past-deadline phases (FR15)
+
+### 4.6a Pages — Portfolio (FR27)
+- [x] Portfolio page with profile header, stats grid, project list + progress bars
+- [x] Route `/portfolio/:userId` accessible to all authenticated users
 
 ### 4.7 Pages — Industry Expert Dashboard
 - [x] Project catalog with real API filters (branch, domain, status)
@@ -178,8 +211,8 @@
 ### 4.8 Charts & Analytics
 - [x] Install recharts
 - [x] Radar/spider chart component for skill profiles
-- [ ] Bar chart for department statistics
-- [ ] Progress charts for project phases
+- [x] Bar chart for department statistics (in Teacher Reports section)
+- [x] Progress charts for project phases (Portfolio progress bars)
 
 ---
 
@@ -268,6 +301,31 @@
 - [x] GET /api/files/:key — not found → 404
 - [x] DELETE /api/files/:key — owner → 200
 - [x] DELETE /api/files/:key — non-owner → 403
+
+### 5.8a Fork / Invitation / Mentor / Deadline / Overdue Endpoints (FR3/7/9/13/15)
+- [x] POST /api/projects/:id/fork — approved project → 201 + forked project
+- [x] POST /api/projects/:id/fork — pending project → 400 (only approved/archived)
+- [x] POST /api/projects/:id/invite — valid email → 201 + invite created + notification sent
+- [x] POST /api/projects/:id/invite — already member → 409
+- [x] POST /api/projects/:id/invite — non-owner → 403
+- [x] GET /api/projects/invitations/me — authenticated → 200 + pending invites
+- [x] PATCH /api/projects/invitations/:id — accept → 200 + status updated
+- [x] PATCH /api/projects/:id/mentor — valid teacher → 200 + notification sent
+- [x] PATCH /api/projects/:id/mentor — already accepted → 400
+- [x] PATCH /api/projects/:id/mentor/respond — teacher accepts → 200
+- [x] PATCH /api/projects/:id/mentor/respond — wrong teacher → 403
+- [x] PATCH /api/projects/:id/deadlines — teacher sets deadlines → 200 + phases updated
+- [x] GET /api/projects/overdue — returns incomplete past-deadline phases → 200
+- [x] GET /api/projects/overdue?studentId=3 — filters by student → 200
+
+### 5.8b Portfolio Endpoints (FR27)
+- [x] GET /api/portfolio/:userId — no auth → 200 + public portfolio
+- [x] GET /api/portfolio/:userId — with auth → 200 + portfolio
+
+### 5.8c Report Endpoints (FR29)
+- [x] GET /api/reports/department/:branch — as teacher → 200 + report
+- [x] GET /api/reports/department/:branch — as student → 403
+- [x] GET /api/reports/student/:id — as teacher → 200 + student report
 
 ### 5.9 Rate Limiting
 - [x] Auth endpoints — max 10 requests/15min per IP

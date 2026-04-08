@@ -15,6 +15,7 @@ import ResetPassword from './pages/auth/ResetPassword'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import PublicOnlyRoute from './components/auth/PublicOnlyRoute'
 import NotFound from './pages/common/NotFound'
+import PortfolioPage from './pages/common/PortfolioPage'
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
       <Route path="/home" element={<ProtectedRoute allowedRoles={['student', 'teacher', 'expert', 'admin']}><HomeDashboard /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute allowedRoles={['student', 'teacher', 'expert', 'admin']}><ProfilePage /></ProtectedRoute>} />
       <Route path="/help" element={<ProtectedRoute allowedRoles={['student', 'teacher', 'expert', 'admin']}><HelpPage /></ProtectedRoute>} />
+      <Route path="/portfolio/:userId" element={<ProtectedRoute allowedRoles={['student', 'teacher', 'expert', 'admin']}><PortfolioPage /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

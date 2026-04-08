@@ -198,6 +198,12 @@
     margin: 4px 8px;
 }
 
+/* ── Hide text labels and badges when sidebar is collapsed ── */
+.ps-collapsed .ps-menu-label,
+.ps-collapsed .sidebar-badge {
+    display: none !important;
+}
+
 /* ── Responsive: hide sidebar on very small screens ── */
 @media (max-width: 768px) {
     .ps-footer .ps-user {

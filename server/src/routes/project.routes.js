@@ -22,10 +22,25 @@ const {
     updateProjectPhase,
     updateProjectPhases,
     searchProjects,
+    forkProject,
+    inviteMember,
+    respondToInvite,
+    getMyInvitations,
+    requestMentor,
+    respondMentorRequest,
+    setPhaseDeadlines,
+    getOverduePhases,
 } = require('../controllers/project.controller');
 
 // Search must come before :id to avoid conflict
 router.get('/search', authenticate, searchProjects);
+
+// FR15: Overdue phases
+router.get('/overdue', authenticate, getOverduePhases);
+
+// FR7: Group invitations
+router.get('/invitations/me', authenticate, getMyInvitations);
+router.patch('/invitations/:id', authenticate, respondToInvite);
 
 router.post('/', authenticate, authorize('student'), parseMultipartFiles, createProject);
 router.get('/', authenticate, getAllProjects);
@@ -36,5 +51,18 @@ router.delete('/:id', authenticate, deleteProject);
 router.patch('/:id/status', authenticate, authorize('teacher', 'admin'), validate({ body: updateProjectStatusSchema }), updateProjectStatus);
 router.patch('/:id/phase', authenticate, validate({ body: updatePhaseSchema }), updateProjectPhase);
 router.patch('/:id/phases', authenticate, validate({ body: updatePhasesSchema }), updateProjectPhases);
+
+// FR3/33: Fork
+router.post('/:id/fork', authenticate, authorize('student'), forkProject);
+
+// FR7: Invite member
+router.post('/:id/invite', authenticate, authorize('student'), inviteMember);
+
+// FR9: Mentor request / respond
+router.patch('/:id/mentor', authenticate, authorize('student'), requestMentor);
+router.patch('/:id/mentor/respond', authenticate, authorize('teacher'), respondMentorRequest);
+
+// FR13: Teacher-set deadlines
+router.patch('/:id/deadlines', authenticate, authorize('teacher', 'admin'), setPhaseDeadlines);
 
 module.exports = router;

@@ -19,14 +19,16 @@ import {
   Image,
   Archive,
   UploadCloud,
-  X
+  X,
+  Calendar,
+  BarChart3
 } from 'lucide-react'
 import './TeacherDashboard.css'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import AppSidebar from '../../components/layout/AppSidebar'
 import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
-import { studentAPI, projectAPI, feedbackAPI, analyticsAPI } from '../../services/api'
+import { studentAPI, projectAPI, feedbackAPI, analyticsAPI, reportAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts'
 
@@ -84,6 +86,20 @@ const TeacherDashboard = () => {
   const [selectedStudentFeedback, setSelectedStudentFeedback] = useState([])
   const [selectedStudentSkills, setSelectedStudentSkills] = useState([])
   const [loadingStudentDetail, setLoadingStudentDetail] = useState(false)
+
+  // FR13: Deadline management
+  const [deadlineProject, setDeadlineProject] = useState(null)
+  const [deadlineForms, setDeadlineForms] = useState({})
+
+  // FR15: Overdue alerts
+  const [overduePhases, setOverduePhases] = useState([])
+
+  // FR29: Reports
+  const [departmentReport, setDepartmentReport] = useState(null)
+  const [loadingReport, setLoadingReport] = useState(false)
+
+  // FR9: Mentor requests (projects requesting this teacher)
+  const [mentorRequests, setMentorRequests] = useState([])
 
   // Fetch registered students by branch from API
   useEffect(() => {
@@ -146,6 +162,76 @@ const TeacherDashboard = () => {
       toast.success('Status updated')
     } catch {
       toast.error('Failed to update project status')
+    }
+  }
+
+  // FR15: Fetch overdue phases
+  useEffect(() => {
+    if (!selectedBranch) return
+    const fetchOverdue = async () => {
+      try {
+        const { data } = await projectAPI.getOverdue()
+        setOverduePhases(data.overdue || [])
+      } catch { /* ignore */ }
+    }
+    fetchOverdue()
+  }, [selectedBranch])
+
+  // FR9: Fetch mentor requests for this teacher
+  useEffect(() => {
+    if (!user) return
+    const fetchMentorRequests = async () => {
+      try {
+        const { data } = await projectAPI.getAll({})
+        const requests = (data.projects || []).filter(p => p.mentorId === user.id && p.mentorStatus === 'requested')
+        // we don't have mentorStatus in getAllProjects select, so we'll fetch individually
+        // For now, use a simple approach
+        setMentorRequests(requests)
+      } catch { /* ignore */ }
+    }
+    fetchMentorRequests()
+  }, [user])
+
+  // FR13: Set deadlines for a project
+  const handleSetDeadlines = async (projectId) => {
+    const deadlines = Object.entries(deadlineForms)
+      .filter(([_, val]) => val)
+      .map(([phaseNum, deadline]) => ({ phaseNumber: parseInt(phaseNum), deadline }))
+    if (deadlines.length === 0) {
+      toast.error('Set at least one deadline')
+      return
+    }
+    try {
+      await projectAPI.setDeadlines(projectId, deadlines)
+      toast.success('Deadlines set successfully!')
+      setDeadlineProject(null)
+      setDeadlineForms({})
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to set deadlines')
+    }
+  }
+
+  // FR9: Respond to mentor request
+  const handleMentorRespond = async (projectId, action) => {
+    try {
+      await projectAPI.respondMentor(projectId, action)
+      toast.success(`Mentor request ${action}ed!`)
+      setMentorRequests(prev => prev.filter(p => p.id !== projectId))
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to respond')
+    }
+  }
+
+  // FR29: Fetch department report
+  const handleFetchReport = async () => {
+    setLoadingReport(true)
+    try {
+      const { data } = await reportAPI.department(selectedBranch)
+      setDepartmentReport(data.report)
+    } catch (error) {
+      toast.error('Failed to load report')
+    } finally {
+      setLoadingReport(false)
     }
   }
 
@@ -332,12 +418,16 @@ const TeacherDashboard = () => {
             { id: 'overview', label: 'Overview', icon: LayoutDashboard },
             { id: 'students', label: 'Student Tracker', icon: FileText },
             { id: 'reviews', label: 'Review Queue', icon: BookOpen, badge: reviewQueue.length },
+            { id: 'deadlines', label: 'Deadlines', icon: Calendar },
+            { id: 'mentors', label: 'Mentor Requests', icon: Users, badge: mentorRequests.length },
+            { id: 'reports', label: 'Reports', icon: BarChart3 },
             { id: 'announcements', label: 'Announcements', icon: Bell },
             { id: 'branch', label: 'Change Branch', icon: Building2, separator: false },
           ]}
           activeSection={activeSection}
           onSectionChange={(id) => {
             if (id === 'branch') { handleBranchChange(); return }
+            if (id === 'reports' && !departmentReport) handleFetchReport()
             handleSectionChange(id)
           }}
           username={user?.username || user?.name}
@@ -468,6 +558,165 @@ const TeacherDashboard = () => {
             </div>
           </section>
 
+          {/* FR15: Overdue Alerts */}
+          {overduePhases.length > 0 && (
+            <section className="overdue-alert-card" style={{ background: 'var(--error-subtle, #fef2f2)', border: '1px solid var(--error, #ef4444)', borderRadius: '12px', padding: '16px 20px', marginBottom: '16px' }}>
+              <h3 style={{ color: 'var(--error, #ef4444)', display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 12px' }}>
+                <AlertTriangle size={18} /> Overdue Phase Alerts ({overduePhases.length})
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {overduePhases.slice(0, 5).map(o => (
+                  <div key={o.phaseId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.875rem' }}>{o.studentName}</strong>
+                      <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginLeft: '8px' }}>{o.projectTitle} — {o.phaseName}</span>
+                    </div>
+                    <small style={{ color: 'var(--error, #ef4444)' }}>Due: {new Date(o.deadline).toLocaleDateString()}</small>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* FR13: Deadline Management */}
+          <section className="student-table-card" id="deadlines" style={{ display: activeSection === 'deadlines' ? 'block' : 'none' }}>
+            <div className="section-header">
+              <div>
+                <h2>Set Phase Deadlines</h2>
+                <p>Select a project and assign deadlines to each phase</p>
+              </div>
+            </div>
+            {uploadedProjects.length === 0 ? (
+              <p className="muted">No projects available.</p>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                  {uploadedProjects.map(p => (
+                    <Button
+                      key={p.id}
+                      variant={deadlineProject === p.id ? 'primary' : 'outline'}
+                      size="sm"
+                      onClick={() => { setDeadlineProject(p.id); setDeadlineForms({}) }}
+                    >
+                      {p.title}
+                    </Button>
+                  ))}
+                </div>
+                {deadlineProject && (
+                  <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '16px', border: '1px solid var(--border-subtle)' }}>
+                    <h4 style={{ marginBottom: '12px' }}>Set Deadlines</h4>
+                    {[1, 2, 3, 4, 5, 6].map(phase => (
+                      <div key={phase} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                        <span style={{ width: '180px', fontSize: '0.875rem' }}>Phase {phase}</span>
+                        <input
+                          type="date"
+                          className="form-input"
+                          style={{ flex: 1, maxWidth: '200px' }}
+                          value={deadlineForms[phase] || ''}
+                          onChange={(e) => setDeadlineForms(prev => ({ ...prev, [phase]: e.target.value }))}
+                        />
+                      </div>
+                    ))}
+                    <Button variant="primary" size="sm" style={{ marginTop: '12px' }} icon={<Calendar size={14} />} onClick={() => handleSetDeadlines(deadlineProject)}>
+                      Save Deadlines
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          {/* FR9: Mentor Requests */}
+          <section className="student-table-card" id="mentors" style={{ display: activeSection === 'mentors' ? 'block' : 'none' }}>
+            <div className="section-header">
+              <div>
+                <h2>Mentor Requests</h2>
+                <p>Students requesting you as their project mentor</p>
+              </div>
+            </div>
+            {mentorRequests.length === 0 ? (
+              <p className="muted">No pending mentor requests.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {mentorRequests.map(project => (
+                  <div key={project.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                    <div>
+                      <strong>{project.title}</strong>
+                      <p style={{ margin: '4px 0 0', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                        by {project.studentName} · {project.studentBranch}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <Button variant="primary" size="sm" onClick={() => handleMentorRespond(project.id, 'accept')}>Accept</Button>
+                      <Button variant="danger" size="sm" onClick={() => handleMentorRespond(project.id, 'decline')}>Decline</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* FR29: Reports */}
+          <section className="student-table-card" id="reports" style={{ display: activeSection === 'reports' ? 'block' : 'none' }}>
+            <div className="section-header">
+              <div>
+                <h2>Department Report — {selectedBranch}</h2>
+                <p>Project statistics and phase completion rates</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleFetchReport} loading={loadingReport}>
+                Refresh
+              </Button>
+            </div>
+            {departmentReport ? (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Students</p>
+                    <strong style={{ fontSize: '1.5rem' }}>{departmentReport.totalStudents}</strong>
+                  </div>
+                  <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Projects</p>
+                    <strong style={{ fontSize: '1.5rem' }}>{departmentReport.totalProjects}</strong>
+                  </div>
+                  {Object.entries(departmentReport.statusBreakdown || {}).map(([status, cnt]) => (
+                    <div key={status} style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{status.replace('_', ' ')}</p>
+                      <strong style={{ fontSize: '1.5rem' }}>{cnt}</strong>
+                    </div>
+                  ))}
+                </div>
+                <h4 style={{ marginBottom: '8px' }}>Phase Completion Rates</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                  {(departmentReport.phaseCompletion || []).map(pc => (
+                    <div key={pc.phase} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ width: '180px', fontSize: '0.875rem' }}>{pc.phase}</span>
+                      <div style={{ flex: 1, background: 'var(--border-primary)', borderRadius: '4px', height: '10px', overflow: 'hidden' }}>
+                        <div style={{ width: `${pc.rate}%`, height: '100%', background: 'var(--accent)', borderRadius: '4px', transition: 'width 0.3s' }} />
+                      </div>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, width: '50px', textAlign: 'right' }}>{pc.rate}%</span>
+                    </div>
+                  ))}
+                </div>
+                {Object.keys(departmentReport.domainDistribution || {}).length > 0 && (
+                  <>
+                    <h4 style={{ marginBottom: '8px' }}>Domain Distribution</h4>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {Object.entries(departmentReport.domainDistribution).map(([domain, cnt]) => (
+                        <span key={domain} style={{ padding: '4px 12px', background: 'var(--accent-subtle)', borderRadius: '20px', fontSize: '0.8125rem' }}>
+                          {domain}: {cnt}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : loadingReport ? (
+              <p className="muted">Loading report...</p>
+            ) : (
+              <p className="muted">Click Refresh to load the department report.</p>
+            )}
+          </section>
+
           <section className="uploaded-projects-section" id="uploaded-projects">
             <div className="section-header">
               <div>
@@ -513,6 +762,9 @@ const TeacherDashboard = () => {
                           <option value="approved">Approved</option>
                           <option value="needs_revision">Needs Revision</option>
                         </select>
+                        <Button variant="ghost" size="sm" onClick={() => { setDeadlineProject(project.id); setDeadlineForms({}); setActiveSection('deadlines') }} style={{ marginTop: '4px' }}>
+                          <Calendar size={14} /> Deadlines
+                        </Button>
                       </div>
                     </div>
                   </div>

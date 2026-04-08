@@ -120,6 +120,19 @@ export const projectAPI = {
     updatePhases: (id, phases) => api.patch(`/projects/${id}/phases`, { phases }),
     getByStudent: (studentId) => api.get(`/projects/student/${studentId}`),
     search: (params) => api.get('/projects/search', { params }),
+    // FR3/33: Fork
+    fork: (id) => api.post(`/projects/${id}/fork`),
+    // FR7: Group invitations
+    invite: (id, data) => api.post(`/projects/${id}/invite`, data),
+    getMyInvitations: () => api.get('/projects/invitations/me'),
+    respondInvite: (id, action) => api.patch(`/projects/invitations/${id}`, { action }),
+    // FR9: Mentor request
+    requestMentor: (id, mentorId) => api.patch(`/projects/${id}/mentor`, { mentorId }),
+    respondMentor: (id, action) => api.patch(`/projects/${id}/mentor/respond`, { action }),
+    // FR13: Deadlines
+    setDeadlines: (id, deadlines) => api.patch(`/projects/${id}/deadlines`, { deadlines }),
+    // FR15: Overdue
+    getOverdue: (params) => api.get('/projects/overdue', { params }),
 };
 
 // ─── Student API ───
@@ -157,6 +170,17 @@ export const fileAPI = {
         }),
     getUrl: (key) => api.get(`/files/${key}`),
     delete: (key) => api.delete(`/files/${key}`),
+};
+
+// ─── Portfolio API ───
+export const portfolioAPI = {
+    get: (userId) => api.get(`/portfolio/${userId}`),
+};
+
+// ─── Report API ───
+export const reportAPI = {
+    department: (branch) => api.get(`/reports/department/${branch}`),
+    student: (id) => api.get(`/reports/student/${id}`),
 };
 
 export default api;

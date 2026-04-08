@@ -15,14 +15,19 @@ import {
   Save,
   X,
   Folder,
-  BarChart3
+  BarChart3,
+  Mail,
+  GitFork,
+  UserPlus,
+  Clock,
+  AlertTriangle
 } from 'lucide-react'
 import './StudentDashboard.css'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import AppSidebar from '../../components/layout/AppSidebar'
 import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
-import { projectAPI, feedbackAPI } from '../../services/api'
+import { projectAPI, feedbackAPI, studentAPI } from '../../services/api'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import toast from 'react-hot-toast'
 
@@ -110,6 +115,19 @@ const StudentDashboard = () => {
   const [phaseDescription, setPhaseDescription] = useState('')
   const [feedbackData, setFeedbackData] = useState([])
 
+  // FR7: Group invitations
+  const [invitations, setInvitations] = useState([])
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviting, setInviting] = useState(false)
+
+  // FR9: Mentor request
+  const [teachers, setTeachers] = useState([])
+  const [mentorRequesting, setMentorRequesting] = useState(false)
+
+  // FR3/33: Fork / browse
+  const [publicProjects, setPublicProjects] = useState([])
+  const [forking, setForking] = useState(null)
+
   // Fetch student's projects
   const fetchMyProjects = async () => {
     if (!user) return
@@ -141,6 +159,86 @@ const StudentDashboard = () => {
   useEffect(() => {
     fetchMyProjects()
   }, [user])
+
+  // Fetch invitations, teachers, and forkable projects
+  useEffect(() => {
+    if (!user) return
+    const fetchInvitations = async () => {
+      try {
+        const { data } = await projectAPI.getMyInvitations()
+        setInvitations(data.invitations || [])
+      } catch { /* ignore */ }
+    }
+    const fetchTeachers = async () => {
+      try {
+        const { data } = await studentAPI.getAll()
+        // teachers are fetched separately - use the users list if available
+      } catch { /* ignore */ }
+    }
+    const fetchPublicProjects = async () => {
+      try {
+        const { data } = await projectAPI.getAll({ visibility: 'public', status: 'approved' })
+        setPublicProjects((data.projects || []).filter(p => p.studentId !== user.id))
+      } catch { /* ignore */ }
+    }
+    fetchInvitations()
+    fetchPublicProjects()
+  }, [user])
+
+  // FR7: Invite a member by email
+  const handleInviteMember = async (projectId) => {
+    if (!inviteEmail.trim()) return
+    setInviting(true)
+    try {
+      await projectAPI.invite(projectId, { email: inviteEmail.trim() })
+      toast.success('Invitation sent!')
+      setInviteEmail('')
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send invitation')
+    } finally {
+      setInviting(false)
+    }
+  }
+
+  // FR7: Respond to invitation
+  const handleRespondInvite = async (inviteId, action) => {
+    try {
+      await projectAPI.respondInvite(inviteId, action)
+      toast.success(`Invitation ${action}ed!`)
+      setInvitations(prev => prev.filter(i => i.id !== inviteId))
+      fetchMyProjects()
+    } catch (error) {
+      toast.error(error.response?.data?.message || `Failed to ${action} invitation`)
+    }
+  }
+
+  // FR9: Request mentor
+  const handleRequestMentor = async (projectId, mentorId) => {
+    setMentorRequesting(true)
+    try {
+      await projectAPI.requestMentor(projectId, mentorId)
+      toast.success('Mentor request sent!')
+      fetchMyProjects()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to request mentor')
+    } finally {
+      setMentorRequesting(false)
+    }
+  }
+
+  // FR3/33: Fork a project
+  const handleForkProject = async (projectId) => {
+    setForking(projectId)
+    try {
+      await projectAPI.fork(projectId)
+      toast.success('Project forked successfully!')
+      fetchMyProjects()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fork project')
+    } finally {
+      setForking(null)
+    }
+  }
 
   const handleSectionChange = (section) => {
     setActiveSection(section)
@@ -374,6 +472,8 @@ const StudentDashboard = () => {
           items={[
             { id: 'tasks', label: 'Task Board', icon: CheckSquare },
             { id: 'uploads', label: 'Uploads', icon: Upload },
+            { id: 'invitations', label: 'Invitations', icon: Mail, badge: invitations.length },
+            { id: 'browse', label: 'Browse & Fork', icon: GitFork },
             { id: 'progress', label: 'Progress', icon: FileText },
             { id: 'feedback', label: 'Feedback', icon: MessageSquare },
             { id: 'analytics', label: 'Analytics', icon: Activity },
@@ -687,6 +787,50 @@ const StudentDashboard = () => {
                             <small>ID: {project.uniqueProjectId}</small>
                           </div>
 
+                          {/* FR7: Invite member */}
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '12px 0', flexWrap: 'wrap' }}>
+                            <input
+                              type="email"
+                              className="form-input"
+                              placeholder="Invite by email..."
+                              value={inviteEmail}
+                              onChange={(e) => setInviteEmail(e.target.value)}
+                              style={{ flex: 1, minWidth: '200px' }}
+                            />
+                            <Button variant="outline" size="sm" icon={<UserPlus size={14} />} disabled={inviting} loading={inviting} onClick={() => handleInviteMember(project.id)}>
+                              Invite
+                            </Button>
+                          </div>
+
+                          {/* FR9: Mentor request */}
+                          {(!project.mentorId || project.mentorStatus === 'none') && (
+                            <div style={{ marginBottom: '12px' }}>
+                              <Button variant="outline" size="sm" icon={<BookOpen size={14} />} onClick={() => {
+                                const mentorIdStr = prompt('Enter teacher user ID to request as mentor:')
+                                if (mentorIdStr) handleRequestMentor(project.id, parseInt(mentorIdStr))
+                              }} disabled={mentorRequesting} loading={mentorRequesting}>
+                                Request Mentor
+                              </Button>
+                            </div>
+                          )}
+                          {project.mentorStatus === 'requested' && (
+                            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                              <Clock size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Mentor request pending...
+                            </p>
+                          )}
+                          {project.mentorStatus === 'accepted' && (
+                            <p style={{ fontSize: '0.8125rem', color: 'var(--success, #10b981)', marginBottom: '12px' }}>
+                              <CheckCircle size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Mentor assigned
+                            </p>
+                          )}
+
+                          {/* FR3/33: Forked from info */}
+                          {project.forkedFromId && (
+                            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                              <GitFork size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Forked from project #{project.forkedFromId}
+                            </p>
+                          )}
+
                           <div className="phases-section">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                               <h5 className="phases-title" style={{ margin: 0 }}>Project Phases</h5>
@@ -717,6 +861,15 @@ const StudentDashboard = () => {
                                       {phase.completed && phase.completedAt && (
                                         <small className="phase-date">
                                           Completed: {new Date(phase.completedAt).toLocaleDateString()}
+                                        </small>
+                                      )}
+                                      {phase.deadline && !phase.completed && (
+                                        <small style={{ color: new Date(phase.deadline) < new Date() ? 'var(--error, #ef4444)' : 'var(--text-muted)', fontWeight: new Date(phase.deadline) < new Date() ? 600 : 400 }}>
+                                          {new Date(phase.deadline) < new Date() ? (
+                                            <><AlertTriangle size={12} style={{ verticalAlign: 'middle', marginRight: '2px' }} /> Overdue</>
+                                          ) : (
+                                            <><Clock size={12} style={{ verticalAlign: 'middle', marginRight: '2px' }} /> Due: {new Date(phase.deadline).toLocaleDateString()}</>
+                                          )}
                                         </small>
                                       )}
                                     </div>
@@ -775,6 +928,81 @@ const StudentDashboard = () => {
                       )
                     })}
                   </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {activeSection === 'invitations' && (
+            <section className="card" id="invitations">
+              <div className="section-header">
+                <div>
+                  <h3>Group Invitations</h3>
+                  <p>Pending invitations to join project groups</p>
+                </div>
+              </div>
+              {invitations.length === 0 ? (
+                <p className="empty-state">No pending invitations.</p>
+              ) : (
+                <div className="invitations-list">
+                  {invitations.map(inv => (
+                    <div key={inv.id} className="invitation-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', marginBottom: '8px', border: '1px solid var(--border-subtle)' }}>
+                      <div>
+                        <strong>{inv.projectTitle}</strong>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                          Invited by {inv.ownerName} · {inv.projectDescription?.substring(0, 80)}...
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        <Button variant="primary" size="sm" onClick={() => handleRespondInvite(inv.id, 'accept')}>Accept</Button>
+                        <Button variant="danger" size="sm" onClick={() => handleRespondInvite(inv.id, 'decline')}>Decline</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {activeSection === 'browse' && (
+            <section className="card" id="browse">
+              <div className="section-header">
+                <div>
+                  <h3>Browse & Fork Projects</h3>
+                  <p>Explore approved public projects and fork them to continue the work</p>
+                </div>
+              </div>
+              {publicProjects.length === 0 ? (
+                <p className="empty-state">No public approved projects available to fork.</p>
+              ) : (
+                <div className="projects-list">
+                  {publicProjects.map(project => (
+                    <div key={project.id} className="project-item" style={{ padding: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <h5>{project.title}</h5>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '4px 0' }}>
+                            by {project.studentName} · {project.studentBranch}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={forking === project.id}
+                          loading={forking === project.id}
+                          icon={<GitFork size={14} />}
+                          onClick={() => handleForkProject(project.id)}
+                        >
+                          Fork
+                        </Button>
+                      </div>
+                      <p className="project-description">{project.description?.substring(0, 200)}</p>
+                      <div className="project-meta">
+                        <small>{(project.domainTags || []).join(', ')}</small>
+                        <small>★ {project.stars || 0}</small>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </section>

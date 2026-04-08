@@ -14,6 +14,8 @@ const feedbackRoutes = require('./routes/feedback.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const fileRoutes = require('./routes/file.routes');
+const portfolioRoutes = require('./routes/portfolio.routes');
+const reportRoutes = require('./routes/report.routes');
 
 const app = express();
 
@@ -88,6 +90,8 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/files', uploadLimiter, fileRoutes);
+app.use('/api/portfolio', portfolioRoutes);
+app.use('/api/reports', reportRoutes);
 
 // ─── 404 Handler ───
 app.use((req, res) => {

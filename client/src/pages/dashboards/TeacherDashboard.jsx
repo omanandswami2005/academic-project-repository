@@ -18,15 +18,17 @@ import {
   Plus,
   Image,
   Archive,
-  UploadCloud
+  UploadCloud,
+  X
 } from 'lucide-react'
 import './TeacherDashboard.css'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import AppSidebar from '../../components/layout/AppSidebar'
 import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
-import { studentAPI, projectAPI, feedbackAPI } from '../../services/api'
+import { studentAPI, projectAPI, feedbackAPI, analyticsAPI } from '../../services/api'
 import toast from 'react-hot-toast'
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts'
 
 const rubricFields = [
   { key: 'technical', label: 'Technical Depth' },
@@ -78,6 +80,10 @@ const TeacherDashboard = () => {
 
   const [discussionMap, setDiscussionMap] = useState({})
   const [rubricScores, setRubricScores] = useState({})
+  const [selectedStudentProjects, setSelectedStudentProjects] = useState([])
+  const [selectedStudentFeedback, setSelectedStudentFeedback] = useState([])
+  const [selectedStudentSkills, setSelectedStudentSkills] = useState([])
+  const [loadingStudentDetail, setLoadingStudentDetail] = useState(false)
 
   // Fetch registered students by branch from API
   useEffect(() => {
@@ -98,8 +104,8 @@ const TeacherDashboard = () => {
           setDiscussionMap(newDiscussionMap)
           setRubricScores(newRubricScores)
         }
-      } catch (error) {
-        console.error('Error fetching students:', error)
+      } catch {
+        toast.error('Failed to load students.')
         setRegisteredStudents([])
       } finally {
         setLoadingStudents(false)
@@ -119,8 +125,8 @@ const TeacherDashboard = () => {
       try {
         const { data } = await projectAPI.getAll({ branch: selectedBranch })
         setUploadedProjects(data.projects || [])
-      } catch (error) {
-        console.error('Error fetching projects:', error)
+      } catch {
+        toast.error('Failed to load projects.')
       } finally {
         setLoadingProjects(false)
       }
@@ -138,8 +144,7 @@ const TeacherDashboard = () => {
         prev.map(p => p.id === projectId ? { ...p, status: newStatus } : p)
       )
       toast.success('Status updated')
-    } catch (error) {
-      console.error('Error updating status:', error)
+    } catch {
       toast.error('Failed to update project status')
     }
   }
@@ -159,6 +164,31 @@ const TeacherDashboard = () => {
 
   useEffect(() => {
     setCommentDraft('')
+    setSelectedStudentProjects([])
+    setSelectedStudentFeedback([])
+    setSelectedStudentSkills([])
+    if (!selectedStudent) return
+    const fetchStudentDetail = async () => {
+      setLoadingStudentDetail(true)
+      try {
+        const [projRes, skillRes] = await Promise.all([
+          projectAPI.getByStudent(selectedStudent.id),
+          analyticsAPI.getSkillRadar(selectedStudent.id),
+        ])
+        const projects = projRes.data?.projects || []
+        setSelectedStudentProjects(projects)
+        setSelectedStudentSkills(skillRes.data?.skills || [])
+        if (projects.length > 0) {
+          try {
+            const fbRes = await feedbackAPI.getByProject(projects[0].id)
+            setSelectedStudentFeedback(fbRes.data?.feedback || [])
+          } catch { /* no feedback yet */ }
+        }
+      } catch { /* student detail is non-critical */ } finally {
+        setLoadingStudentDetail(false)
+      }
+    }
+    fetchStudentDetail()
   }, [selectedStudent])
 
   const filteredStudents = useMemo(() => {
@@ -303,7 +333,7 @@ const TeacherDashboard = () => {
           items={[
             { id: 'overview', label: 'Overview', icon: LayoutDashboard },
             { id: 'students', label: 'Student Tracker', icon: FileText },
-            { id: 'reviews', label: 'Review Queue', icon: BookOpen },
+            { id: 'reviews', label: 'Review Queue', icon: BookOpen, badge: reviewQueue.length },
             { id: 'announcements', label: 'Announcements', icon: Bell },
             { id: 'branch', label: 'Change Branch', icon: Building2, separator: false },
           ]}
@@ -356,9 +386,9 @@ const TeacherDashboard = () => {
                 </div>
               )}
             </div>
-            <button className="filter-button" type="button">
+            <Button variant="secondary" size="sm" aria-label="Toggle filter" onClick={() => { }}>
               <Filter size={18} />
-            </button>
+            </Button>
           </section>
 
           <section className="insights-panel" id="overview">
@@ -430,9 +460,7 @@ const TeacherDashboard = () => {
                           </span>
                         </td>
                         <td className="actions-cell">
-                          <button className="outlined-btn" type="button" onClick={() => setSelectedStudent(student)}>
-                            View Project
-                          </button>
+                          <Button variant="outline" size="sm" onClick={() => setSelectedStudent(student)}>View Project</Button>
                         </td>
                       </tr>
                     ))
@@ -531,9 +559,7 @@ const TeacherDashboard = () => {
                             <span>{item.due}</span>
                             <small>{item.timeAgo}</small>
                           </div>
-                          <button className="ghost-btn" type="button">
-                            Open
-                          </button>
+                          <Button variant="ghost" size="sm">Open</Button>
                         </div>
                       </div>
                     )
@@ -590,9 +616,9 @@ const TeacherDashboard = () => {
                     <h2>{selectedStudent.name}</h2>
                     <p className="detail-desc">{selectedStudent.projectTitle}</p>
                   </div>
-                  <button className="close-detail" type="button" onClick={() => setSelectedStudent(null)}>
-                    ×
-                  </button>
+                  <Button variant="ghost" size="sm" aria-label="Close" onClick={() => setSelectedStudent(null)}>
+                    <X size={16} />
+                  </Button>
                 </div>
 
                 <div className="detail-grid">
@@ -696,6 +722,68 @@ const TeacherDashboard = () => {
                       </Button>
                     </div>
                   </div>
+
+                  <div className="rubric-card">
+                    <h3>Previous Feedback</h3>
+                    {loadingStudentDetail ? (
+                      <p className="muted">Loading feedback...</p>
+                    ) : selectedStudentFeedback.length === 0 ? (
+                      <p className="muted">No feedback recorded for this student yet.</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {selectedStudentFeedback.map(fb => (
+                          <div key={fb.id} style={{ padding: '10px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <strong style={{ fontSize: '0.875rem' }}>{fb.reviewerName || 'Reviewer'}</strong>
+                              <small style={{ color: 'var(--text-muted)' }}>{new Date(fb.createdAt).toLocaleDateString()}</small>
+                            </div>
+                            <div style={{ display: 'flex', gap: '2px', marginBottom: '4px' }}>
+                              {[...Array(5)].map((_, i) => (
+                                <span key={i} style={{ color: i < fb.rating ? '#FFD700' : 'var(--border-primary)' }}>★</span>
+                              ))}
+                            </div>
+                            {fb.comment && <p style={{ fontSize: '0.875rem', margin: 0 }}>{fb.comment}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedStudentSkills.length > 0 && (
+                    <div className="rubric-card">
+                      <h3>Skill Radar</h3>
+                      <ResponsiveContainer width="100%" height={220}>
+                        <RadarChart data={selectedStudentSkills.slice(0, 8)}>
+                          <PolarGrid stroke="var(--border-primary)" />
+                          <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                          <Radar
+                            name="Skills"
+                            dataKey="value"
+                            stroke="var(--accent)"
+                            fill="var(--accent)"
+                            fillOpacity={0.25}
+                          />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {selectedStudentProjects.length > 0 && (
+                    <div className="rubric-card">
+                      <h3>Submitted Projects</h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {selectedStudentProjects.map(p => (
+                          <div key={p.id} style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: 0 }}>{p.title}</p>
+                              <small style={{ color: 'var(--text-muted)' }}>{(p.phases || []).filter(ph => ph.completed).length}/{(p.phases || []).length} phases</small>
+                            </div>
+                            <span className={`status-chip ${p.status}`} style={{ fontSize: '0.75rem' }}>{p.status.replace('_', ' ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="rubric-card">
                     <h3>Rubric Evaluation</h3>

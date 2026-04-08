@@ -23,6 +23,7 @@ import AppSidebar from '../../components/layout/AppSidebar'
 import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
 import { projectAPI, feedbackAPI } from '../../services/api'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import toast from 'react-hot-toast'
 
 
@@ -131,8 +132,8 @@ const StudentDashboard = () => {
         } catch { /* no feedback yet */ }
       }
       setProjectsLoading(false)
-    } catch (error) {
-      console.error('Error fetching projects:', error)
+    } catch {
+      toast.error('Failed to load projects.')
       setProjectsLoading(false)
     }
   }
@@ -272,7 +273,6 @@ const StudentDashboard = () => {
       setEditingPhase(null)
       setPhaseDescription('')
     } catch (error) {
-      console.error('Error updating phase:', error)
       toast.error(error.response?.data?.message || 'Failed to update phase.')
     }
   }
@@ -318,6 +318,32 @@ const StudentDashboard = () => {
   const cancelEditing = () => {
     setEditingPhase(null)
     setPhaseDescription('')
+  }
+
+  // ── Drag & Drop handler for Kanban ──
+  const handleDragEnd = (result) => {
+    const { source, destination, draggableId } = result
+    if (!destination) return
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return
+    if (myProjects.length === 0) return
+
+    const project = myProjects[0]
+    const phaseNumber = Number(draggableId)
+    const phase = (project.phases || []).find(p => p.phaseNumber === phaseNumber)
+    if (!phase) return
+
+    const targetColumn = destination.droppableId // 'todo' | 'inProgress' | 'done'
+
+    if (targetColumn === 'done') {
+      // Mark completed
+      updateProjectPhase(project.id, phaseNumber, true, phase.description || '')
+    } else if (targetColumn === 'inProgress') {
+      // Uncomplete if was done, set description placeholder if empty
+      updateProjectPhase(project.id, phaseNumber, false, phase.description || 'In progress')
+    } else {
+      // Move to todo — uncomplete and clear description
+      updateProjectPhase(project.id, phaseNumber, false, '')
+    }
   }
 
   // Render stars
@@ -377,90 +403,83 @@ const StudentDashboard = () => {
                 const todo = phases.filter(p => !p.completed && !p.description)
                 const inProgress = phases.filter(p => !p.completed && p.description)
                 const done = phases.filter(p => p.completed)
+
+                const columns = [
+                  { id: 'todo', title: 'To Do', dotClass: 'kanban-dot--todo', items: todo },
+                  { id: 'inProgress', title: 'In Progress', dotClass: 'kanban-dot--progress', items: inProgress },
+                  { id: 'done', title: 'Done', dotClass: 'kanban-dot--done', items: done },
+                ]
+
                 return (
-                  <div className="kanban-board">
-                    <div className="kanban-column kanban-todo">
-                      <div className="kanban-column-header">
-                        <span className="kanban-dot kanban-dot--todo" />
-                        <h4>To Do</h4>
-                        <span className="kanban-count">{todo.length}</span>
-                      </div>
-                      <div className="kanban-cards">
-                        {todo.map(phase => (
-                          <div key={phase.phaseNumber} className="kanban-card">
-                            <div className="kanban-card-top">
-                              <span className="kanban-card-title">{phase.phaseName}</span>
-                              <span className="priority high">Pending</span>
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <div className="kanban-board">
+                      {columns.map(col => (
+                        <Droppable key={col.id} droppableId={col.id}>
+                          {(provided, snapshot) => (
+                            <div
+                              className={`kanban-column kanban-${col.id === 'inProgress' ? 'progress' : col.id}${snapshot.isDraggingOver ? ' kanban-column--over' : ''}`}
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                            >
+                              <div className="kanban-column-header">
+                                <span className={`kanban-dot ${col.dotClass}`} />
+                                <h4>{col.title}</h4>
+                                <span className="kanban-count">{col.items.length}</span>
+                              </div>
+                              <div className="kanban-cards">
+                                {col.items.map((phase, index) => (
+                                  <Draggable key={String(phase.phaseNumber)} draggableId={String(phase.phaseNumber)} index={index}>
+                                    {(dragProvided, dragSnapshot) => (
+                                      <div
+                                        className={`kanban-card${col.id === 'done' ? ' kanban-card--done' : ''}${dragSnapshot.isDragging ? ' kanban-card--dragging' : ''}`}
+                                        ref={dragProvided.innerRef}
+                                        {...dragProvided.draggableProps}
+                                        {...dragProvided.dragHandleProps}
+                                      >
+                                        <div className="kanban-card-top">
+                                          <span className="kanban-card-title">{phase.phaseName}</span>
+                                          <span className={`priority ${col.id === 'done' ? 'low' : col.id === 'inProgress' ? 'medium' : 'high'}`}>
+                                            {col.id === 'done' ? 'Done' : col.id === 'inProgress' ? 'Working' : 'Pending'}
+                                          </span>
+                                        </div>
+                                        <p className="kanban-card-desc">{phase.description || 'No description'}</p>
+                                        {col.id === 'done' && phase.completedAt && (
+                                          <small className="kanban-card-date">{new Date(phase.completedAt).toLocaleDateString()}</small>
+                                        )}
+                                        <div className="kanban-card-actions">
+                                          {col.id !== 'done' && (
+                                            <button type="button" className="kanban-action-btn" onClick={() => startEditingPhase(myProjects[0].id, phase.phaseNumber)}>
+                                              <Edit size={13} /> {phase.description ? 'Edit' : 'Add Details'}
+                                            </button>
+                                          )}
+                                          {col.id !== 'done' && (
+                                            <button type="button" className="kanban-action-btn done" onClick={() => togglePhase(myProjects[0].id, phase.phaseNumber)}>
+                                              <CheckCircle size={13} /> Mark Done
+                                            </button>
+                                          )}
+                                          {col.id === 'done' && (
+                                            <button type="button" className="kanban-action-btn undo" onClick={() => togglePhase(myProjects[0].id, phase.phaseNumber)}>
+                                              <X size={13} /> Undo
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                                {col.items.length === 0 && (
+                                  <p className="kanban-empty">
+                                    {col.id === 'todo' ? 'No tasks in backlog' : col.id === 'inProgress' ? 'Nothing in progress' : 'Nothing completed yet'}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                            <p className="kanban-card-desc">{phase.description || 'No description'}</p>
-                            <div className="kanban-card-actions">
-                              <button type="button" className="kanban-action-btn" onClick={() => startEditingPhase(myProjects[0].id, phase.phaseNumber)}>
-                                <Edit size={13} /> Add Details
-                              </button>
-                              <button type="button" className="kanban-action-btn done" onClick={() => togglePhase(myProjects[0].id, phase.phaseNumber)}>
-                                <CheckCircle size={13} /> Mark Done
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                        {todo.length === 0 && <p className="kanban-empty">No tasks in backlog</p>}
-                      </div>
+                          )}
+                        </Droppable>
+                      ))}
                     </div>
-                    <div className="kanban-column kanban-progress">
-                      <div className="kanban-column-header">
-                        <span className="kanban-dot kanban-dot--progress" />
-                        <h4>In Progress</h4>
-                        <span className="kanban-count">{inProgress.length}</span>
-                      </div>
-                      <div className="kanban-cards">
-                        {inProgress.map(phase => (
-                          <div key={phase.phaseNumber} className="kanban-card">
-                            <div className="kanban-card-top">
-                              <span className="kanban-card-title">{phase.phaseName}</span>
-                              <span className="priority medium">Working</span>
-                            </div>
-                            <p className="kanban-card-desc">{phase.description}</p>
-                            <div className="kanban-card-actions">
-                              <button type="button" className="kanban-action-btn" onClick={() => startEditingPhase(myProjects[0].id, phase.phaseNumber)}>
-                                <Edit size={13} /> Edit
-                              </button>
-                              <button type="button" className="kanban-action-btn done" onClick={() => togglePhase(myProjects[0].id, phase.phaseNumber)}>
-                                <CheckCircle size={13} /> Mark Done
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                        {inProgress.length === 0 && <p className="kanban-empty">Nothing in progress</p>}
-                      </div>
-                    </div>
-                    <div className="kanban-column kanban-done">
-                      <div className="kanban-column-header">
-                        <span className="kanban-dot kanban-dot--done" />
-                        <h4>Done</h4>
-                        <span className="kanban-count">{done.length}</span>
-                      </div>
-                      <div className="kanban-cards">
-                        {done.map(phase => (
-                          <div key={phase.phaseNumber} className="kanban-card kanban-card--done">
-                            <div className="kanban-card-top">
-                              <span className="kanban-card-title">{phase.phaseName}</span>
-                              <span className="priority low">Done</span>
-                            </div>
-                            <p className="kanban-card-desc">{phase.description || 'Completed'}</p>
-                            {phase.completedAt && (
-                              <small className="kanban-card-date">{new Date(phase.completedAt).toLocaleDateString()}</small>
-                            )}
-                            <div className="kanban-card-actions">
-                              <button type="button" className="kanban-action-btn undo" onClick={() => togglePhase(myProjects[0].id, phase.phaseNumber)}>
-                                <X size={13} /> Undo
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                        {done.length === 0 && <p className="kanban-empty">Nothing completed yet</p>}
-                      </div>
-                    </div>
-                  </div>
+                  </DragDropContext>
                 )
               })() : (
                 <p className="empty-state">Upload a project to see your Kanban board.</p>
@@ -634,7 +653,7 @@ const StudentDashboard = () => {
                           <div className="project-item-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
                               {editingProject === project.id ? (
-                                <input className="form-input" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})} />
+                                <input className="form-input" value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} />
                               ) : (
                                 <h5>{project.title}</h5>
                               )}
@@ -654,8 +673,8 @@ const StudentDashboard = () => {
                           </div>
                           {editingProject === project.id ? (
                             <div style={{ marginTop: '8px', marginBottom: '8px' }}>
-                              <textarea className="form-textarea" rows="3" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} />
-                              <input className="form-input" style={{ marginTop: '8px' }} placeholder="Domain Tags (comma separated)" value={editForm.domainTags} onChange={e => setEditForm({...editForm, domainTags: e.target.value})} />
+                              <textarea className="form-textarea" rows="3" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} />
+                              <input className="form-input" style={{ marginTop: '8px' }} placeholder="Domain Tags (comma separated)" value={editForm.domainTags} onChange={e => setEditForm({ ...editForm, domainTags: e.target.value })} />
                               <Button variant="primary" size="sm" style={{ marginTop: '8px' }} onClick={() => saveProjectEdit(project.id)}>Save Changes</Button>
                             </div>
                           ) : (

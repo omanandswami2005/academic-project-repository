@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import { useAuth } from '../../context/AuthContext'
 import { projectAPI, notificationAPI } from '../../services/api'
 import { FolderOpen, Clock, CheckCircle, Users, BookOpen, BarChart2, Bell } from 'lucide-react'
+import toast from 'react-hot-toast'
 import './HomeDashboard.css'
 
 const roleLinks = {
@@ -51,8 +52,8 @@ const HomeDashboard = () => {
           inProgress: all.filter(p => p.status === 'in_progress').length,
         })
         setRecentNotifs(notifRes.data.notifications?.slice(0, 4) || [])
-      } catch (error) {
-        console.error('HomeDashboard load error:', error)
+      } catch {
+        toast.error('Failed to load dashboard data.')
       } finally {
         setLoading(false)
       }

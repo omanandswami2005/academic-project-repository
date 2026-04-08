@@ -96,6 +96,7 @@ const AppSidebar = ({ items = [], activeSection, onSectionChange, username, role
                             icon={<Icon size={18} />}
                             active={activeSection === item.id}
                             onClick={() => onSectionChange(item.id)}
+                            suffix={item.badge > 0 ? <span className="sidebar-badge">{item.badge}</span> : null}
                         >
                             {item.label}
                         </MenuItem>

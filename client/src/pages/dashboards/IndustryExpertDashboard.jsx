@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
+  CheckCircle,
   Download,
   FileText,
   LayoutGrid,
   Search,
   Star,
   Trophy,
-  User
+  User,
+  X
 } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
@@ -57,6 +59,7 @@ const IndustryExpertDashboard = () => {
   const [loadingDeptStats, setLoadingDeptStats] = useState(false)
   const [projectPhases, setProjectPhases] = useState([])
   const [loadingDetail, setLoadingDetail] = useState(false)
+  const [evalSubmitted, setEvalSubmitted] = useState(false)
 
   // Fetch projects from API
   useEffect(() => {
@@ -65,8 +68,8 @@ const IndustryExpertDashboard = () => {
       try {
         const { data } = await projectAPI.getAll({ visibility: 'public', limit: 50 })
         setApiProjects(data.projects || [])
-      } catch (error) {
-        console.error('Error fetching projects:', error)
+      } catch {
+        // silently fail — loading state handles UI
       } finally {
         setLoadingProjects(false)
       }
@@ -190,6 +193,7 @@ const IndustryExpertDashboard = () => {
     setSelectedProject(project)
     setEvaluation(evaluationTemplate)
     setProjectPhases([])
+    setEvalSubmitted(false)
     setLoadingDetail(true)
     try {
       const { data } = await projectAPI.getById(project.id)
@@ -201,7 +205,10 @@ const IndustryExpertDashboard = () => {
     }
   }
 
-  const closeProject = () => setSelectedProject(null)
+  const closeProject = () => {
+    setSelectedProject(null)
+    setEvalSubmitted(false)
+  }
 
   const updateEvaluation = (field, value) => {
     setEvaluation(prev => ({ ...prev, [field]: value }))
@@ -342,9 +349,7 @@ const IndustryExpertDashboard = () => {
                     <div className="progress-fill" style={{ width: `${project.progress}%` }} />
                   </div>
                   <span>{project.progress}%</span>
-                  <button type="button" onClick={() => openProject(project)}>
-                    View Details
-                  </button>
+                  <Button variant="secondary" size="sm" onClick={() => openProject(project)}>View Details</Button>
                 </div>
               </div>
             ))}
@@ -462,9 +467,9 @@ const IndustryExpertDashboard = () => {
       {selectedProject && (
         <div className="expert-modal">
           <div className="modal-card">
-            <button type="button" className="close-btn" onClick={closeProject}>
-              ×
-            </button>
+            <Button type="button" variant="ghost" size="sm" aria-label="Close" onClick={closeProject} style={{ position: 'absolute', top: '12px', right: '12px' }}>
+              <X size={16} />
+            </Button>
             <header className="modal-header">
               <div>
                 <p>{selectedProject.branch} • {selectedProject.category}</p>
@@ -552,68 +557,81 @@ const IndustryExpertDashboard = () => {
                 </div>
                 <div className="modal-card-block">
                   <h4>Expert Evaluation</h4>
-                  <textarea
-                    rows="3"
-                    placeholder="Share comments for the student team..."
-                    value={evaluation.feedback}
-                    onChange={(e) => updateEvaluation('feedback', e.target.value)}
-                  />
-                  <label>
-                    Innovation ({evaluation.innovation})
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={evaluation.innovation}
-                      onChange={(e) => updateEvaluation('innovation', Number(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    Feasibility ({evaluation.feasibility})
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={evaluation.feasibility}
-                      onChange={(e) => updateEvaluation('feasibility', Number(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    Hireability ({evaluation.hireability})
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={evaluation.hireability}
-                      onChange={(e) => updateEvaluation('hireability', Number(e.target.value))}
-                    />
-                  </label>
-                  <Button variant="primary" size="sm" onClick={async () => {
-                    if (!evaluation.feedback.trim()) {
-                      toast.error('Please add feedback comments')
-                      return
-                    }
-                    try {
-                      const avgRating = Math.round((evaluation.innovation + evaluation.feasibility + evaluation.hireability) / 3) || 3
-                      await feedbackAPI.create({
-                        projectId: selectedProject.id,
-                        rating: Math.min(5, Math.max(1, avgRating)),
-                        comment: evaluation.feedback,
-                        rubricScores: {
-                          innovation: Number(evaluation.innovation),
-                          feasibility: Number(evaluation.feasibility),
-                          hireability: Number(evaluation.hireability),
+                  {evalSubmitted ? (
+                    <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                      <CheckCircle size={40} style={{ color: 'var(--accent)', margin: '0 auto 12px', display: 'block' }} />
+                      <p style={{ fontWeight: 600, marginBottom: '8px' }}>Evaluation Submitted!</p>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '16px' }}>Your feedback has been saved successfully.</p>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <Button variant="ghost" size="sm" onClick={() => { setEvalSubmitted(false); setEvaluation(evaluationTemplate) }}>Submit Another</Button>
+                        <Button variant="secondary" size="sm" onClick={closeProject}>Close</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <textarea
+                        rows="3"
+                        placeholder="Share comments for the student team..."
+                        value={evaluation.feedback}
+                        onChange={(e) => updateEvaluation('feedback', e.target.value)}
+                      />
+                      <label>
+                        Innovation ({evaluation.innovation})
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={evaluation.innovation}
+                          onChange={(e) => updateEvaluation('innovation', Number(e.target.value))}
+                        />
+                      </label>
+                      <label>
+                        Feasibility ({evaluation.feasibility})
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={evaluation.feasibility}
+                          onChange={(e) => updateEvaluation('feasibility', Number(e.target.value))}
+                        />
+                      </label>
+                      <label>
+                        Hireability ({evaluation.hireability})
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={evaluation.hireability}
+                          onChange={(e) => updateEvaluation('hireability', Number(e.target.value))}
+                        />
+                      </label>
+                      <Button variant="primary" size="sm" onClick={async () => {
+                        if (!evaluation.feedback.trim()) {
+                          toast.error('Please add feedback comments')
+                          return
                         }
-                      })
-                      toast.success('Evaluation submitted!')
-                      setEvaluation(evaluationTemplate)
-                      closeProject()
-                    } catch (err) {
-                      toast.error(err.response?.data?.message || 'Failed to submit evaluation')
-                    }
-                  }}>
-                    Submit Evaluation
-                  </Button>
+                        try {
+                          const avgRating = Math.round((evaluation.innovation + evaluation.feasibility + evaluation.hireability) / 3) || 3
+                          await feedbackAPI.create({
+                            projectId: selectedProject.id,
+                            rating: Math.min(5, Math.max(1, avgRating)),
+                            comment: evaluation.feedback,
+                            rubricScores: {
+                              innovation: Number(evaluation.innovation),
+                              feasibility: Number(evaluation.feasibility),
+                              hireability: Number(evaluation.hireability),
+                            }
+                          })
+                          toast.success('Evaluation submitted!')
+                          setEvalSubmitted(true)
+                        } catch (err) {
+                          toast.error(err.response?.data?.message || 'Failed to submit evaluation')
+                        }
+                      }}>
+                        Submit Evaluation
+                      </Button>
+                    </>
+                  )}
                 </div>
                 <div className="modal-card-block">
                   <h4>Project Phases</h4>

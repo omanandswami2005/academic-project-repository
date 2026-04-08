@@ -17,7 +17,7 @@ import { useTheme } from '../../context/ThemeContext'
 import { notificationAPI } from '../../services/api'
 import './DashboardLayout.css'
 
-const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => {
+const DashboardLayout = ({ onLogout, children }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()

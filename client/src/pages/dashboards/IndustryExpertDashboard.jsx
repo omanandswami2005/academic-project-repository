@@ -221,460 +221,460 @@ const IndustryExpertDashboard = () => {
           <h1>Industry Expert Review</h1>
           <p>Browse curated student projects, inspect artifacts, and leave structured feedback.</p>
         </div>
-      <div className="expert-dashboard">
-        <section className="expert-hero card fade-up">
-          <div className="hero-intro">
-            <p>Industry Overview</p>
-            <h2>Stay ahead of the most promising RSCOE projects</h2>
-            <span>Filters and featured picks refresh in real time.</span>
-          </div>
-          <div className="hero-grid">
-            {heroStats.map(stat => (
-              <div key={stat.id} className="hero-metric">
-                <strong>{stat.value}</strong>
-                <p>{stat.label}</p>
-                <small>{stat.detail}</small>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="filter-panel card fade-up">
-          <div className="filter-bar">
-            <div className="search-wrapper">
-              <Search size={18} />
-              <input
-                type="search"
-                placeholder="Search students, projects, roll numbers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        <div className="expert-dashboard">
+          <section className="expert-hero card fade-up">
+            <div className="hero-intro">
+              <p>Industry Overview</p>
+              <h2>Stay ahead of the most promising RSCOE projects</h2>
+              <span>Filters and featured picks refresh in real time.</span>
             </div>
-            <div className="filter-grid">
-              <label>
-                Branch
-                <select value={filters.branch} onChange={(e) => handleFilterChange('branch', e.target.value)}>
-                  {branchFilters.map(option => (
-                    <option key={option}>{option}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Technology
-                <select value={filters.technology} onChange={(e) => handleFilterChange('technology', e.target.value)}>
-                  {techFilters.map(option => (
-                    <option key={option}>{option}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Completion
-                <select value={filters.completion} onChange={(e) => handleFilterChange('completion', e.target.value)}>
-                  {completionBrackets.map(bracket => (
-                    <option key={bracket.id} value={bracket.id}>
-                      {bracket.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Year
-                <select value={filters.year} onChange={(e) => handleFilterChange('year', e.target.value)}>
-                  {yearFilters.map(option => (
-                    <option key={option}>{option}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Category
-                <select value={filters.category} onChange={(e) => handleFilterChange('category', e.target.value)}>
-                  {categoryFilters.map(option => (
-                    <option key={option}>{option}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </div>
-        </section>
-
-        <section className="featured-section fade-up">
-          <div className="section-heading">
-            <h3>Featured for Review</h3>
-            <p>High-impact ideas curated for industry eyes</p>
-          </div>
-          <div className="featured-grid">
-            {featuredProjects.map(project => (
-              <button key={project.id} type="button" className="featured-card" onClick={() => openProject(project)}>
-                <div className="featured-thumb" />
-                <div className="featured-body">
-                  <div className="featured-top">
-                    <span className="badge">{project.category}</span>
-                    <span className="score-chip">Innovation {project.innovationScore}</span>
-                  </div>
-                  <h4>{project.title}</h4>
-                  <p>{project.description}</p>
-                  <div className="featured-meta">
-                    <span>{project.student}</span>
-                    <span>{project.branch} • {project.year}</span>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="projects-section fade-up" id="project-catalog">
-          <div className="section-heading">
-            <h3>All Projects</h3>
-            <p>{filteredProjects.length} projects match your filters</p>
-          </div>
-          <div className="projects-grid">
-            {filteredProjects.map(project => (
-              <div key={project.id} className="project-card">
-                <div className="project-head">
-                  <div>
-                    <h4>{project.title}</h4>
-                    <span>{project.student} • {project.roll}</span>
-                  </div>
-                  <span className={`status-chip ${project.status.toLowerCase().replace(' ', '-')}`}>
-                    {project.status}
-                  </span>
-                </div>
-                <p className="project-desc">{project.description}</p>
-                <div className="project-tags">
-                  <span>{project.branch}</span>
-                  <span>{project.domain}</span>
-                  <span>{project.category}</span>
-                </div>
-                <div className="project-footer">
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${project.progress}%` }} />
-                  </div>
-                  <span>{project.progress}%</span>
-                  <Button variant="secondary" size="sm" onClick={() => openProject(project)}>View Details</Button>
-                </div>
-              </div>
-            ))}
-            {filteredProjects.length === 0 && (
-              <div className="empty-state">
-                <LayoutGrid size={24} />
-                <p>No projects match those filters. Try broadening your search.</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* ── Top Students Leaderboard ── */}
-        <section className="analytics-section card fade-up" id="top-students">
-          <div className="analytics-header">
-            <div className="section-heading">
-              <h3><Trophy size={16} /> Top Students by Domain</h3>
-              <p>Ranked by total stars earned across all projects</p>
-            </div>
-            <label className="analytics-filter-label">
-              Domain
-              <select value={domainFilter} onChange={e => setDomainFilter(e.target.value)}>
-                <option value="">All Domains</option>
-                {uniqueDomains.map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          {loadingTopStudents ? (
-            <p className="loading-text">Loading leaderboard...</p>
-          ) : topStudents.length === 0 ? (
-            <div className="empty-state">
-              <User size={24} />
-              <p>No students found{domainFilter ? ` for "${domainFilter}"` : ''}.</p>
-            </div>
-          ) : (
-            <div className="student-leaderboard">
-              {topStudents.map((s, i) => (
-                <div key={s.studentId} className="student-rank-card">
-                  <span className={`rank-badge rank-${Math.min(i + 1, 4)}`}>{i + 1}</span>
-                  <div className="rank-info">
-                    <strong>{s.studentName}</strong>
-                    <span>{s.branch || '—'} · {s.projectCount} project{s.projectCount !== 1 ? 's' : ''}</span>
-                    <div className="rank-domain-tags">
-                      {s.domains.slice(0, 3).map(d => <span key={d}>{d}</span>)}
-                    </div>
-                  </div>
-                  <div className="rank-score">
-                    <strong>{s.totalStars}</strong>
-                    <span><Star size={12} /> stars</span>
-                  </div>
+            <div className="hero-grid">
+              {heroStats.map(stat => (
+                <div key={stat.id} className="hero-metric">
+                  <strong>{stat.value}</strong>
+                  <p>{stat.label}</p>
+                  <small>{stat.detail}</small>
                 </div>
               ))}
             </div>
-          )}
-        </section>
+          </section>
 
-        {/* ── Department Statistics Bar Chart ── */}
-        <section className="analytics-section card fade-up">
-          <div className="analytics-header">
+          <section className="filter-panel card fade-up">
+            <div className="filter-bar">
+              <div className="search-wrapper">
+                <Search size={18} />
+                <input
+                  type="search"
+                  placeholder="Search students, projects, roll numbers..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="filter-grid">
+                <label>
+                  Branch
+                  <select value={filters.branch} onChange={(e) => handleFilterChange('branch', e.target.value)}>
+                    {branchFilters.map(option => (
+                      <option key={option}>{option}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Technology
+                  <select value={filters.technology} onChange={(e) => handleFilterChange('technology', e.target.value)}>
+                    {techFilters.map(option => (
+                      <option key={option}>{option}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Completion
+                  <select value={filters.completion} onChange={(e) => handleFilterChange('completion', e.target.value)}>
+                    {completionBrackets.map(bracket => (
+                      <option key={bracket.id} value={bracket.id}>
+                        {bracket.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Year
+                  <select value={filters.year} onChange={(e) => handleFilterChange('year', e.target.value)}>
+                    {yearFilters.map(option => (
+                      <option key={option}>{option}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Category
+                  <select value={filters.category} onChange={(e) => handleFilterChange('category', e.target.value)}>
+                    {categoryFilters.map(option => (
+                      <option key={option}>{option}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section className="featured-section fade-up">
             <div className="section-heading">
-              <h3>Department Statistics</h3>
-              <p>Project distribution and domain breakdown by branch</p>
+              <h3>Featured for Review</h3>
+              <p>High-impact ideas curated for industry eyes</p>
             </div>
-            <label className="analytics-filter-label">
-              Branch
-              <select value={deptBranch} onChange={e => setDeptBranch(e.target.value)}>
-                {branchFilters.filter(b => b !== 'All').map(b => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          {loadingDeptStats ? (
-            <p className="loading-text">Loading department data...</p>
-          ) : deptStats ? (
-            <>
-              <div className="dept-summary">
-                <div className="dept-stat"><strong>{deptStats.totalStudents}</strong><span>Students</span></div>
-                <div className="dept-stat"><strong>{deptStats.totalProjects}</strong><span>Projects</span></div>
-                <div className="dept-stat"><strong>{deptStats.approvedProjects}</strong><span>Approved</span></div>
-                <div className="dept-stat"><strong>{deptStats.pendingProjects}</strong><span>Pending</span></div>
-                <div className="dept-stat"><strong>{deptStats.averageStars}</strong><span>Avg Stars</span></div>
-              </div>
-              {deptStats.domainDistribution && deptStats.domainDistribution.length > 0 ? (
-                <div className="dept-bar-chart">
-                  <p className="chart-label">Domain Distribution</p>
-                  {[...deptStats.domainDistribution]
-                    .sort((a, b) => b.count - a.count)
-                    .map(item => {
-                      const max = Math.max(...deptStats.domainDistribution.map(d => d.count), 1)
-                      const pct = Math.round((item.count / max) * 100)
-                      return (
-                        <div key={item.domain} className="bar-item">
-                          <span className="bar-label">{item.domain}</span>
-                          <div className="bar-track">
-                            <div className="bar-fill" style={{ width: `${pct}%` }} />
-                          </div>
-                          <span className="bar-count">{item.count}</span>
-                        </div>
-                      )
-                    })}
-                </div>
-              ) : (
-                <p className="loading-text">No domain data for {deptBranch} yet.</p>
-              )}
-            </>
-          ) : (
-            <div className="empty-state"><p>No data available for {deptBranch}.</p></div>
-          )}
-        </section>
-      </div>
+            <div className="featured-grid">
+              {featuredProjects.map(project => (
+                <button key={project.id} type="button" className="featured-card" onClick={() => openProject(project)}>
+                  <div className="featured-thumb" />
+                  <div className="featured-body">
+                    <div className="featured-top">
+                      <span className="badge">{project.category}</span>
+                      <span className="score-chip">Innovation {project.innovationScore}</span>
+                    </div>
+                    <h4>{project.title}</h4>
+                    <p>{project.description}</p>
+                    <div className="featured-meta">
+                      <span>{project.student}</span>
+                      <span>{project.branch} • {project.year}</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
 
-      {selectedProject && (
-        <div className="expert-modal">
-          <div className="modal-card">
-            <Button type="button" variant="ghost" size="sm" aria-label="Close" onClick={closeProject} style={{ position: 'absolute', top: '12px', right: '12px' }}>
-              <X size={16} />
-            </Button>
-            <header className="modal-header">
-              <div>
-                <p>{selectedProject.branch} • {selectedProject.category}</p>
-                <h2>{selectedProject.title}</h2>
+          <section className="projects-section fade-up" id="project-catalog">
+            <div className="section-heading">
+              <h3>All Projects</h3>
+              <p>{filteredProjects.length} projects match your filters</p>
+            </div>
+            <div className="projects-grid">
+              {filteredProjects.map(project => (
+                <div key={project.id} className="project-card">
+                  <div className="project-head">
+                    <div>
+                      <h4>{project.title}</h4>
+                      <span>{project.student} • {project.roll}</span>
+                    </div>
+                    <span className={`status-chip ${project.status.toLowerCase().replace(' ', '-')}`}>
+                      {project.status}
+                    </span>
+                  </div>
+                  <p className="project-desc">{project.description}</p>
+                  <div className="project-tags">
+                    <span>{project.branch}</span>
+                    <span>{project.domain}</span>
+                    <span>{project.category}</span>
+                  </div>
+                  <div className="project-footer">
+                    <div className="progress-track">
+                      <div className="progress-fill" style={{ width: `${project.progress}%` }} />
+                    </div>
+                    <span>{project.progress}%</span>
+                    <Button variant="secondary" size="sm" onClick={() => openProject(project)}>View Details</Button>
+                  </div>
+                </div>
+              ))}
+              {filteredProjects.length === 0 && (
+                <div className="empty-state">
+                  <LayoutGrid size={24} />
+                  <p>No projects match those filters. Try broadening your search.</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* ── Top Students Leaderboard ── */}
+          <section className="analytics-section card fade-up" id="top-students">
+            <div className="analytics-header">
+              <div className="section-heading">
+                <h3><Trophy size={16} /> Top Students by Domain</h3>
+                <p>Ranked by total stars earned across all projects</p>
               </div>
-              <span className="score-chip">Progress {selectedProject.progress}%</span>
-            </header>
-            <div className="modal-grid">
-              <div className="modal-column">
-                <div className="modal-card-block">
-                  <h4>Project Snapshot</h4>
-                  <p>{selectedProject.description}</p>
-                  <div className="info-grid">
-                    <div>
-                      <span>Student</span>
-                      <strong>{selectedProject.student}</strong>
-                    </div>
-                    <div>
-                      <span>Roll No</span>
-                      <strong>{selectedProject.roll}</strong>
-                    </div>
-                    <div>
-                      <span>Domain</span>
-                      <strong>{selectedProject.domain}</strong>
-                    </div>
-                    <div>
-                      <span>Year</span>
-                      <strong>{selectedProject.year}</strong>
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-card-block">
-                  <h4>Problem Statement</h4>
-                  <p>{selectedProject.problem}</p>
-                </div>
-                <div className="modal-card-block">
-                  <h4>Timeline</h4>
-                  <div className="timeline">
-                    {selectedProject.timeline.map(item => (
-                      <div key={item.label} className={`timeline-node ${item.status}`}>
-                        <div className="dot" />
-                        <div>
-                          <strong>{item.label}</strong>
-                          <span>{item.date || 'Pending'}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="modal-card-block">
-                  <h4>Documents</h4>
-                  <div className="document-list">
-                    {selectedProject.documents.map(doc => (
-                      <button key={doc} type="button">
-                        <FileText size={16} />
-                        {doc}
-                        <Download size={14} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <label className="analytics-filter-label">
+                Domain
+                <select value={domainFilter} onChange={e => setDomainFilter(e.target.value)}>
+                  <option value="">All Domains</option>
+                  {uniqueDomains.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {loadingTopStudents ? (
+              <p className="loading-text">Loading leaderboard...</p>
+            ) : topStudents.length === 0 ? (
+              <div className="empty-state">
+                <User size={24} />
+                <p>No students found{domainFilter ? ` for "${domainFilter}"` : ''}.</p>
               </div>
-              <div className="modal-column">
-                <div className="modal-card-block">
-                  <h4>Team</h4>
-                  <ul>
-                    {selectedProject.team.map(member => (
-                      <li key={member.name}>
-                        <User size={16} />
-                        <div>
-                          <strong>{member.name}</strong>
-                          <span>{member.role}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="modal-card-block">
-                  <h4>Tech Stack</h4>
-                  <div className="tag-row">
-                    {selectedProject.techStack.map(tag => (
-                      <span key={tag}>{tag}</span>
-                    ))}
-                  </div>
-                </div>
-                <div className="modal-card-block">
-                  <h4>Expert Evaluation</h4>
-                  {evalSubmitted ? (
-                    <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                      <CheckCircle size={40} style={{ color: 'var(--accent)', margin: '0 auto 12px', display: 'block' }} />
-                      <p style={{ fontWeight: 600, marginBottom: '8px' }}>Evaluation Submitted!</p>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '16px' }}>Your feedback has been saved successfully.</p>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        <Button variant="ghost" size="sm" onClick={() => { setEvalSubmitted(false); setEvaluation(evaluationTemplate) }}>Submit Another</Button>
-                        <Button variant="secondary" size="sm" onClick={closeProject}>Close</Button>
+            ) : (
+              <div className="student-leaderboard">
+                {topStudents.map((s, i) => (
+                  <div key={s.studentId} className="student-rank-card">
+                    <span className={`rank-badge rank-${Math.min(i + 1, 4)}`}>{i + 1}</span>
+                    <div className="rank-info">
+                      <strong>{s.studentName}</strong>
+                      <span>{s.branch || '—'} · {s.projectCount} project{s.projectCount !== 1 ? 's' : ''}</span>
+                      <div className="rank-domain-tags">
+                        {s.domains.slice(0, 3).map(d => <span key={d}>{d}</span>)}
                       </div>
                     </div>
-                  ) : (
-                    <>
-                      <textarea
-                        rows="3"
-                        placeholder="Share comments for the student team..."
-                        value={evaluation.feedback}
-                        onChange={(e) => updateEvaluation('feedback', e.target.value)}
-                      />
-                      <label>
-                        Innovation ({evaluation.innovation})
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={evaluation.innovation}
-                          onChange={(e) => updateEvaluation('innovation', Number(e.target.value))}
-                        />
-                      </label>
-                      <label>
-                        Feasibility ({evaluation.feasibility})
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={evaluation.feasibility}
-                          onChange={(e) => updateEvaluation('feasibility', Number(e.target.value))}
-                        />
-                      </label>
-                      <label>
-                        Hireability ({evaluation.hireability})
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={evaluation.hireability}
-                          onChange={(e) => updateEvaluation('hireability', Number(e.target.value))}
-                        />
-                      </label>
-                      <Button variant="primary" size="sm" onClick={async () => {
-                        if (!evaluation.feedback.trim()) {
-                          toast.error('Please add feedback comments')
-                          return
-                        }
-                        try {
-                          const avgRating = Math.round((evaluation.innovation + evaluation.feasibility + evaluation.hireability) / 3) || 3
-                          await feedbackAPI.create({
-                            projectId: selectedProject.id,
-                            rating: Math.min(5, Math.max(1, avgRating)),
-                            comment: evaluation.feedback,
-                            rubricScores: {
-                              innovation: Number(evaluation.innovation),
-                              feasibility: Number(evaluation.feasibility),
-                              hireability: Number(evaluation.hireability),
-                            }
-                          })
-                          toast.success('Evaluation submitted!')
-                          setEvalSubmitted(true)
-                        } catch (err) {
-                          toast.error(err.response?.data?.message || 'Failed to submit evaluation')
-                        }
-                      }}>
-                        Submit Evaluation
-                      </Button>
-                    </>
-                  )}
+                    <div className="rank-score">
+                      <strong>{s.totalStars}</strong>
+                      <span><Star size={12} /> stars</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ── Department Statistics Bar Chart ── */}
+          <section className="analytics-section card fade-up">
+            <div className="analytics-header">
+              <div className="section-heading">
+                <h3>Department Statistics</h3>
+                <p>Project distribution and domain breakdown by branch</p>
+              </div>
+              <label className="analytics-filter-label">
+                Branch
+                <select value={deptBranch} onChange={e => setDeptBranch(e.target.value)}>
+                  {branchFilters.filter(b => b !== 'All').map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {loadingDeptStats ? (
+              <p className="loading-text">Loading department data...</p>
+            ) : deptStats ? (
+              <>
+                <div className="dept-summary">
+                  <div className="dept-stat"><strong>{deptStats.totalStudents}</strong><span>Students</span></div>
+                  <div className="dept-stat"><strong>{deptStats.totalProjects}</strong><span>Projects</span></div>
+                  <div className="dept-stat"><strong>{deptStats.approvedProjects}</strong><span>Approved</span></div>
+                  <div className="dept-stat"><strong>{deptStats.pendingProjects}</strong><span>Pending</span></div>
+                  <div className="dept-stat"><strong>{deptStats.averageStars}</strong><span>Avg Stars</span></div>
                 </div>
-                <div className="modal-card-block">
-                  <h4>Project Phases</h4>
-                  {loadingDetail ? (
-                    <p className="loading-text">Loading phases...</p>
-                  ) : (
-                    <div className="phase-steps">
-                      {projectPhases.length > 0 ? projectPhases.map((phase, i) => (
-                        <div key={phase.id || i} className={`phase-step ${phase.completed ? 'done' : ''}`}>
-                          <div className="phase-dot">{phase.completed ? '✓' : phase.phaseNumber || i + 1}</div>
-                          <div className="phase-info">
-                            <strong>{phase.phaseName}</strong>
-                            {phase.completed && phase.completedAt && (
-                              <span>{new Date(phase.completedAt).toLocaleDateString()}</span>
-                            )}
+                {deptStats.domainDistribution && deptStats.domainDistribution.length > 0 ? (
+                  <div className="dept-bar-chart">
+                    <p className="chart-label">Domain Distribution</p>
+                    {[...deptStats.domainDistribution]
+                      .sort((a, b) => b.count - a.count)
+                      .map(item => {
+                        const max = Math.max(...deptStats.domainDistribution.map(d => d.count), 1)
+                        const pct = Math.round((item.count / max) * 100)
+                        return (
+                          <div key={item.domain} className="bar-item">
+                            <span className="bar-label">{item.domain}</span>
+                            <div className="bar-track">
+                              <div className="bar-fill" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="bar-count">{item.count}</span>
+                          </div>
+                        )
+                      })}
+                  </div>
+                ) : (
+                  <p className="loading-text">No domain data for {deptBranch} yet.</p>
+                )}
+              </>
+            ) : (
+              <div className="empty-state"><p>No data available for {deptBranch}.</p></div>
+            )}
+          </section>
+        </div>
+
+        {selectedProject && (
+          <div className="expert-modal">
+            <div className="modal-card">
+              <Button type="button" variant="ghost" size="sm" aria-label="Close" onClick={closeProject} style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                <X size={16} />
+              </Button>
+              <header className="modal-header">
+                <div>
+                  <p>{selectedProject.branch} • {selectedProject.category}</p>
+                  <h2>{selectedProject.title}</h2>
+                </div>
+                <span className="score-chip">Progress {selectedProject.progress}%</span>
+              </header>
+              <div className="modal-grid">
+                <div className="modal-column">
+                  <div className="modal-card-block">
+                    <h4>Project Snapshot</h4>
+                    <p>{selectedProject.description}</p>
+                    <div className="info-grid">
+                      <div>
+                        <span>Student</span>
+                        <strong>{selectedProject.student}</strong>
+                      </div>
+                      <div>
+                        <span>Roll No</span>
+                        <strong>{selectedProject.roll}</strong>
+                      </div>
+                      <div>
+                        <span>Domain</span>
+                        <strong>{selectedProject.domain}</strong>
+                      </div>
+                      <div>
+                        <span>Year</span>
+                        <strong>{selectedProject.year}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-card-block">
+                    <h4>Problem Statement</h4>
+                    <p>{selectedProject.problem}</p>
+                  </div>
+                  <div className="modal-card-block">
+                    <h4>Timeline</h4>
+                    <div className="timeline">
+                      {selectedProject.timeline.map(item => (
+                        <div key={item.label} className={`timeline-node ${item.status}`}>
+                          <div className="dot" />
+                          <div>
+                            <strong>{item.label}</strong>
+                            <span>{item.date || 'Pending'}</span>
                           </div>
                         </div>
-                      )) : (
-                        <p className="loading-text">No phase data available yet.</p>
-                      )}
+                      ))}
                     </div>
-                  )}
-                  <div className="phase-progress-bar">
-                    <div
-                      className="phase-progress-fill"
-                      style={{
-                        width: projectPhases.length > 0
-                          ? `${Math.round((projectPhases.filter(p => p.completed).length / projectPhases.length) * 100)}%`
-                          : '0%'
-                      }}
-                    />
                   </div>
-                  <p className="phase-progress-text">
-                    {projectPhases.filter(p => p.completed).length} / {projectPhases.length || 6} phases complete
-                  </p>
+                  <div className="modal-card-block">
+                    <h4>Documents</h4>
+                    <div className="document-list">
+                      {selectedProject.documents.map(doc => (
+                        <button key={doc} type="button">
+                          <FileText size={16} />
+                          {doc}
+                          <Download size={14} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-column">
+                  <div className="modal-card-block">
+                    <h4>Team</h4>
+                    <ul>
+                      {selectedProject.team.map(member => (
+                        <li key={member.name}>
+                          <User size={16} />
+                          <div>
+                            <strong>{member.name}</strong>
+                            <span>{member.role}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="modal-card-block">
+                    <h4>Tech Stack</h4>
+                    <div className="tag-row">
+                      {selectedProject.techStack.map(tag => (
+                        <span key={tag}>{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="modal-card-block">
+                    <h4>Expert Evaluation</h4>
+                    {evalSubmitted ? (
+                      <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                        <CheckCircle size={40} style={{ color: 'var(--accent)', margin: '0 auto 12px', display: 'block' }} />
+                        <p style={{ fontWeight: 600, marginBottom: '8px' }}>Evaluation Submitted!</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '16px' }}>Your feedback has been saved successfully.</p>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                          <Button variant="ghost" size="sm" onClick={() => { setEvalSubmitted(false); setEvaluation(evaluationTemplate) }}>Submit Another</Button>
+                          <Button variant="secondary" size="sm" onClick={closeProject}>Close</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <textarea
+                          rows="3"
+                          placeholder="Share comments for the student team..."
+                          value={evaluation.feedback}
+                          onChange={(e) => updateEvaluation('feedback', e.target.value)}
+                        />
+                        <label>
+                          Innovation ({evaluation.innovation})
+                          <input
+                            type="range"
+                            min="1"
+                            max="10"
+                            value={evaluation.innovation}
+                            onChange={(e) => updateEvaluation('innovation', Number(e.target.value))}
+                          />
+                        </label>
+                        <label>
+                          Feasibility ({evaluation.feasibility})
+                          <input
+                            type="range"
+                            min="1"
+                            max="10"
+                            value={evaluation.feasibility}
+                            onChange={(e) => updateEvaluation('feasibility', Number(e.target.value))}
+                          />
+                        </label>
+                        <label>
+                          Hireability ({evaluation.hireability})
+                          <input
+                            type="range"
+                            min="1"
+                            max="10"
+                            value={evaluation.hireability}
+                            onChange={(e) => updateEvaluation('hireability', Number(e.target.value))}
+                          />
+                        </label>
+                        <Button variant="primary" size="sm" onClick={async () => {
+                          if (!evaluation.feedback.trim()) {
+                            toast.error('Please add feedback comments')
+                            return
+                          }
+                          try {
+                            const avgRating = Math.round((evaluation.innovation + evaluation.feasibility + evaluation.hireability) / 3) || 3
+                            await feedbackAPI.create({
+                              projectId: selectedProject.id,
+                              rating: Math.min(5, Math.max(1, avgRating)),
+                              comment: evaluation.feedback,
+                              rubricScores: {
+                                innovation: Number(evaluation.innovation),
+                                feasibility: Number(evaluation.feasibility),
+                                hireability: Number(evaluation.hireability),
+                              }
+                            })
+                            toast.success('Evaluation submitted!')
+                            setEvalSubmitted(true)
+                          } catch (err) {
+                            toast.error(err.response?.data?.message || 'Failed to submit evaluation')
+                          }
+                        }}>
+                          Submit Evaluation
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  <div className="modal-card-block">
+                    <h4>Project Phases</h4>
+                    {loadingDetail ? (
+                      <p className="loading-text">Loading phases...</p>
+                    ) : (
+                      <div className="phase-steps">
+                        {projectPhases.length > 0 ? projectPhases.map((phase, i) => (
+                          <div key={phase.id || i} className={`phase-step ${phase.completed ? 'done' : ''}`}>
+                            <div className="phase-dot">{phase.completed ? '✓' : phase.phaseNumber || i + 1}</div>
+                            <div className="phase-info">
+                              <strong>{phase.phaseName}</strong>
+                              {phase.completed && phase.completedAt && (
+                                <span>{new Date(phase.completedAt).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                        )) : (
+                          <p className="loading-text">No phase data available yet.</p>
+                        )}
+                      </div>
+                    )}
+                    <div className="phase-progress-bar">
+                      <div
+                        className="phase-progress-fill"
+                        style={{
+                          width: projectPhases.length > 0
+                            ? `${Math.round((projectPhases.filter(p => p.completed).length / projectPhases.length) * 100)}%`
+                            : '0%'
+                        }}
+                      />
+                    </div>
+                    <p className="phase-progress-text">
+                      {projectPhases.filter(p => p.completed).length} / {projectPhases.length || 6} phases complete
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </main>
     </DashboardLayout>
   )

@@ -31,9 +31,7 @@ const AppSidebar = ({ items = [], activeSection, onSectionChange, username, role
             width="260px"
             collapsedWidth="68px"
             rootStyles={{
-                position: 'sticky',
-                top: '56px',
-                height: 'calc(100dvh - 56px)',
+                height: '100%',
                 flexShrink: 0,
                 zIndex: 10,
                 [`.${sidebarClasses.container}`]: {
@@ -69,10 +67,12 @@ const AppSidebar = ({ items = [], activeSection, onSectionChange, username, role
                 menuItemStyles={{
                     button: ({ active }) => ({
                         margin: '2px 8px',
+                        padding: collapsed ? '0 12px' : '0 12px',
                         borderRadius: '8px',
                         fontSize: '0.8125rem',
                         fontFamily: 'inherit',
                         fontWeight: active ? 600 : 400,
+                        height: '38px',
                         color: active ? 'var(--accent-text)' : 'var(--text-muted)',
                         backgroundColor: active ? 'var(--accent)' : 'transparent',
                         '&:hover': {
@@ -82,6 +82,12 @@ const AppSidebar = ({ items = [], activeSection, onSectionChange, username, role
                     }),
                     icon: {
                         color: 'inherit',
+                        minWidth: '20px',
+                        width: '20px',
+                        marginRight: collapsed ? '0' : '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                     },
                 }}
             >

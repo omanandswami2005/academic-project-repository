@@ -62,13 +62,15 @@ A cloud-based web application that serves as a private repository for the colleg
 
 ## 3. Functional Requirements
 
+> **Status Legend:** ✅ Implemented | 🔧 Implementing | ⬜ Planned
+
 ### 3.1 Project Repository Management
 
-- **FR1 - Repository Creation:** Every project must have a unique repository (similar to GitHub) with title, description, domain tags, and file attachments.
-- **FR2 - Unique Identification:** Every project assigned a unique ID based on sequence (e.g., `CSE_2026_001`) using `BRANCH_YEAR_SEQ` format for easy tracking.
-- **FR3 - Project Continuity (Carry-Forward):** A completed/archived project can be "forked" by a new batch. The new project links to the original as `forkedFromId`, preserving attribution. The new team can add improvements and track what changed.
-- **FR4 - Project Lifecycle Statuses:** `draft` → `pending` → `under_review` → `approved` / `needs_revision` → `completed` → `archived`. Teachers control status transitions; students can only move from draft to pending (submit for review).
-- **FR5 - Six-Phase Execution Model:** Every project follows 6 mandatory phases:
+- ✅ **FR1 - Repository Creation:** Every project must have a unique repository (similar to GitHub) with title, description, domain tags, and file attachments.
+- ✅ **FR2 - Unique Identification:** Every project assigned a unique ID based on sequence (e.g., `CSE_2026_001`) using `BRANCH_YEAR_SEQ` format for easy tracking.
+- 🔧 **FR3 - Project Continuity (Carry-Forward):** A completed/archived project can be "forked" by a new batch. The new project links to the original as `forkedFromId`, preserving attribution. The new team can add improvements and track what changed.
+- ✅ **FR4 - Project Lifecycle Statuses:** `draft` → `pending` → `under_review` → `approved` / `needs_revision` → `completed` → `archived`. Teachers control status transitions; students can only move from draft to pending (submit for review).
+- ✅ **FR5 - Six-Phase Execution Model:** Every project follows 6 mandatory phases:
   1. Idea & Proposal
   2. Research Paper
   3. Building Prototype
@@ -80,30 +82,30 @@ A cloud-based web application that serves as a private repository for the colleg
 
 ### 3.2 Student & Group Management
 
-- **FR6 - Identity Mapping:** Students identified by Name, Email, PRN, Mobile, Branch, and Year.
-- **FR7 - Group Formation:** Support for groups of 1–4 students per project. One member is the "leader" (creator). Leader can invite other students by PRN/email; invitees accept or decline.
-- **FR8 - Skill Tagging:** Projects tagged with domain skills (e.g., IoT, Cyber Security, ML, Web Dev). Tags auto-populate the student's skill profile for radar chart generation.
-- **FR9 - Mentor Request:** Students can request a specific teacher as mentor while creating a project. Teacher receives a notification and can accept or reassign. If no mentor requested, HOD/admin assigns one.
+- ✅ **FR6 - Identity Mapping:** Students identified by Name, Email, PRN, Mobile, Branch, and Year.
+- 🔧 **FR7 - Group Formation:** Support for groups of 1–4 students per project. One member is the "leader" (creator). Leader can invite other students by PRN/email; invitees accept or decline.
+- ✅ **FR8 - Skill Tagging:** Projects tagged with domain skills (e.g., IoT, Cyber Security, ML, Web Dev). Tags auto-populate the student's skill profile for radar chart generation.
+- 🔧 **FR9 - Mentor Request:** Students can request a specific teacher as mentor while creating a project. Teacher receives a notification and can accept or reassign. If no mentor requested, HOD/admin assigns one.
 
 ### 3.3 Search and Discovery
 
-- **FR10 - Cross-Department Visibility:** Any user can browse "public" projects across all departments. Students can discover past projects for inspiration before proposing their own topic.
-- **FR11 - Advanced Search:** Search by title, description keyword, domain tag, branch, year, or student name. Supports combined filters and pagination.
-- **FR12 - Duplicate/Plagiarism Detection:** When a student submits a new project title, the system checks similarity against all existing project titles in the same branch. If similarity > 70%, a warning is shown (not blocked) and the teacher is flagged.
+- ✅ **FR10 - Cross-Department Visibility:** Any user can browse "public" projects across all departments. Students can discover past projects for inspiration before proposing their own topic.
+- ✅ **FR11 - Advanced Search:** Search by title, description keyword, domain tag, branch, year, or student name. Supports combined filters and pagination.
+- ⬜ **FR12 - Duplicate/Plagiarism Detection:** When a student submits a new project title, the system checks similarity against all existing project titles in the same branch. If similarity > 70%, a warning is shown (not blocked) and the teacher is flagged.
 
 ### 3.4 Deadline & Progress Tracking
 
-- **FR13 - Teacher-Set Deadlines:** Teachers can set a deadline date for each of the 6 phases per project (or branch-wide default deadlines). Students see countdowns on their Kanban board.
-- **FR14 - Kanban Task Board:** Students manage their project phases via a 3-column drag-and-drop board (To Do → In Progress → Done). Dragging a card to "Done" marks the phase complete with a timestamp.
-- **FR15 - Overdue Alerts:** If a phase deadline passes without completion, the system:
+- 🔧 **FR13 - Teacher-Set Deadlines:** Teachers can set a deadline date for each of the 6 phases per project (or branch-wide default deadlines). Students see countdowns on their Kanban board.
+- ✅ **FR14 - Kanban Task Board:** Students manage their project phases via a 3-column drag-and-drop board (To Do → In Progress → Done). Dragging a card to "Done" marks the phase complete with a timestamp.
+- 🔧 **FR15 - Overdue Alerts:** If a phase deadline passes without completion, the system:
   - Marks the phase as "overdue" (visual indicator on student Kanban)
   - Sends a notification to the student
   - Flags the student in the teacher's "Needs Attention" list
-- **FR16 - Auto Progress Calculation:** Project completion percentage = (completed phases / 6) × 100. Stars are earned per phase (max 6 stars).
+- ✅ **FR16 - Auto Progress Calculation:** Project completion percentage = (completed phases / 6) × 100. Stars are earned per phase (max 6 stars).
 
 ### 3.5 Feedback & Evaluation
 
-- **FR17 - Structured Rubric Scoring:** Teachers and experts evaluate projects using a 5-dimension rubric (each 0-10):
+- ✅ **FR17 - Structured Rubric Scoring:** Teachers and experts evaluate projects using a 5-dimension rubric (each 0-10):
   - Technical Depth
   - Innovation & Originality
   - Documentation Quality
@@ -111,13 +113,13 @@ A cloud-based web application that serves as a private repository for the colleg
   - Completeness
 
   Total score out of 50, stored as JSON.
-- **FR18 - Written Feedback:** In addition to rubric scores, reviewers can add free-text comments.
-- **FR19 - Multi-Reviewer Support:** A project can receive feedback from multiple teachers and experts. All reviews are visible on the project detail page.
-- **FR20 - Evaluation Confirmation:** After submitting feedback, the expert/teacher sees a confirmation screen with option to "Submit Another" or "Close" — preventing accidental modal closure.
+- ✅ **FR18 - Written Feedback:** In addition to rubric scores, reviewers can add free-text comments.
+- ✅ **FR19 - Multi-Reviewer Support:** A project can receive feedback from multiple teachers and experts. All reviews are visible on the project detail page.
+- ✅ **FR20 - Evaluation Confirmation:** After submitting feedback, the expert/teacher sees a confirmation screen with option to "Submit Another" or "Close" — preventing accidental modal closure.
 
 ### 3.6 Notifications & Communication
 
-- **FR21 - Event-Driven Notifications:** The system generates notifications for:
+- ✅ **FR21 - Event-Driven Notifications:** The system generates notifications for:
   - Project status change (approved, needs revision)
   - New feedback received
   - Mentor assignment confirmation
@@ -125,45 +127,45 @@ A cloud-based web application that serves as a private repository for the colleg
   - Phase overdue
   - Group invitation received / accepted / declined
   - Announcement posted by teacher
-- **FR22 - Teacher Announcements:** Teachers can post branch-wide announcements (title + message). All students in the branch see the announcement on their dashboard.
-- **FR23 - Mark Read / Read All:** Users can mark individual notifications as read, or mark all as read.
+- ✅ **FR22 - Teacher Announcements:** Teachers can post branch-wide announcements (title + message). All students in the branch see the announcement on their dashboard.
+- ✅ **FR23 - Mark Read / Read All:** Users can mark individual notifications as read, or mark all as read.
 
 ### 3.7 Analytics & Placement
 
-- **FR24 - Skill Radar Charts:** Generate visual skill profiles (Radar/Spider charts) for each student based on:
+- ✅ **FR24 - Skill Radar Charts:** Generate visual skill profiles (Radar/Spider charts) for each student based on:
   - Domain tags from their projects
   - Rubric scores from teacher/expert evaluations
   - Number of completed phases
-- **FR25 - Industry Filter (Top-N):** TNP/companies can search "Top N students in [Domain]" ranked by project quality (stars, rubric scores) rather than just CGPA.
-- **FR26 - Department Analytics:** Per-branch aggregated stats:
+- ✅ **FR25 - Industry Filter (Top-N):** TNP/companies can search "Top N students in [Domain]" ranked by project quality (stars, rubric scores) rather than just CGPA.
+- ✅ **FR26 - Department Analytics:** Per-branch aggregated stats:
   - Total students & projects
   - Approved vs pending vs overdue
   - Average rubric scores
   - Domain distribution (pie/bar chart)
   - Year-over-year comparison
-- **FR27 - Student Portfolio View:** Students get an auto-generated portfolio page showing all their projects, skills radar, total stars, feedback summary — shareable via a public link for placement interviews.
+- 🔧 **FR27 - Student Portfolio View:** Students get an auto-generated portfolio page showing all their projects, skills radar, total stars, feedback summary — shareable via a public link for placement interviews.
 
 ### 3.8 Admin & College Management
 
-- **FR28 - Admin Dashboard:** HOD/admin can:
+- ⬜ **FR28 - Admin Dashboard:** HOD/admin can:
   - View all departments and their stats at a glance
   - Assign/reassign mentors to projects
   - Set academic calendar (semester start/end, submission deadlines)
   - Manage user accounts (activate/deactivate, reset passwords)
-- **FR29 - Report Generation (Accreditation):** Generate downloadable reports:
+- 🔧 **FR29 - Report Generation (Accreditation):** Generate downloadable reports:
   - Department-wise project summary (PDF/Excel)
   - Student-wise project & skill report
   - Mentor workload report (projects per teacher)
   - Semester-wise completion statistics
   - These reports align with NAAC/NBA documentation requirements.
-- **FR30 - Plagiarism Dashboard:** Admin sees a list of flagged similar projects with similarity percentage, allowing manual review and action.
-- **FR31 - Academic Calendar:** Define semester periods, default phase deadlines, and submission windows. Projects created during a semester auto-inherit the calendar's deadlines.
+- ⬜ **FR30 - Plagiarism Dashboard:** Admin sees a list of flagged similar projects with similarity percentage, allowing manual review and action.
+- ⬜ **FR31 - Academic Calendar:** Define semester periods, default phase deadlines, and submission windows. Projects created during a semester auto-inherit the calendar's deadlines.
 
 ### 3.9 Project Continuity & Archival
 
-- **FR32 - End-of-Semester Archival:** At semester end, all approved projects are automatically marked "archived." Archived projects remain searchable and viewable but cannot be edited.
-- **FR33 - Fork/Carry-Forward:** Any student (current or next batch) can "fork" an archived project — creating a new project pre-populated with the original's description and tags, linked via `forkedFromId`. The original team gets credited.
-- **FR34 - Version History:** Each file upload creates a new version. Students can view previous uploads and revert if needed. Teachers can see the submission timeline.
+- ⬜ **FR32 - End-of-Semester Archival:** At semester end, all approved projects are automatically marked "archived." Archived projects remain searchable and viewable but cannot be edited.
+- 🔧 **FR33 - Fork/Carry-Forward:** Any student (current or next batch) can "fork" an archived project — creating a new project pre-populated with the original's description and tags, linked via `forkedFromId`. The original team gets credited.
+- ⬜ **FR34 - Version History:** Each file upload creates a new version. Students can view previous uploads and revert if needed. Teachers can see the submission timeline.
 
 ---
 

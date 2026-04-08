@@ -2,7 +2,9 @@
 
 .student-dashboard {
     display: flex;
-    min-height: calc(100vh - 56px);
+    flex: 1;
+    min-height: 0;
+    /* let flex item shrink below content */
 }
 
 /* ── Main Content ── */

@@ -71,10 +71,12 @@ const HomeDashboard = () => {
   ]
 
   return (
-    <DashboardLayout
-      pageTitle="Workspace Overview"
-      pageDescription={`Welcome back, ${user?.username || 'User'} — ${user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''} · ${user?.branch || ''}`}
-    >
+    <DashboardLayout>
+      <main className="page-content">
+        <div className="page-heading">
+          <h1>Workspace Overview</h1>
+          <p>{`Welcome back, ${user?.username || 'User'} — ${user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''} · ${user?.branch || ''}`}</p>
+        </div>
       <div className="home-grid">
 
         <section className="home-card stats-card">
@@ -140,6 +142,7 @@ const HomeDashboard = () => {
         </section>
 
       </div>
+      </main>
     </DashboardLayout>
   )
 }

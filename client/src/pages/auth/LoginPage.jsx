@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, Moon, Sun } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
@@ -7,7 +7,6 @@ import toast from 'react-hot-toast'
 import './LoginPage.css'
 
 const LoginPage = () => {
-  const { role } = useParams()
   const navigate = useNavigate()
   const { login } = useAuth()
   const { isDark, toggleTheme } = useTheme()
@@ -18,30 +17,15 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const roleTitles = {
-    student: 'Student Login',
-    teacher: 'Teacher Login',
-    expert: 'Expert Login'
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      const data = await login(formData.email, formData.password, role)
+      const data = await login(formData.email, formData.password)
       toast.success('Login Successful!')
 
-      const userRole = data.user.role || role
-      if (userRole === 'student') {
-        navigate('/student')
-      } else if (userRole === 'teacher') {
-        navigate('/teacher/branches')
-      } else if (userRole === 'expert') {
-        navigate('/expert')
-      } else {
-        navigate('/home')
-      }
+      navigate('/home')
     } catch (error) {
       toast.error(error.response?.data?.message || 'Login failed. Check your credentials.')
     } finally {
@@ -65,13 +49,13 @@ const LoginPage = () => {
       </div>
 
       <div className="auth-container">
-        <button className="auth-back" onClick={() => navigate('/role-selection?action=login')}>
+        <button className="auth-back" onClick={() => navigate('/')}>
           <ArrowLeft size={15} />
           Back
         </button>
 
         <div className="auth-header">
-          <h1>{roleTitles[role] || 'Login'}</h1>
+          <h1>Sign In</h1>
           <p>Enter your credentials to continue</p>
         </div>
 
@@ -131,7 +115,7 @@ const LoginPage = () => {
         </form>
 
         <div className="auth-link">
-          <p>Don't have an account? <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/signup/${role}`) }}>Sign up</a></p>
+          <p>Don't have an account? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/role-selection?action=signup') }}>Sign up</a></p>
         </div>
       </div>
     </div>

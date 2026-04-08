@@ -77,19 +77,12 @@ const signup = async (req, res) => {
 const login = async (req, res) => {
     try {
         const db = getDB();
-        const { email, password, role } = req.body;
+        const { email, password } = req.body;
 
         const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
         if (!user) {
             logger.warn('AUTH', `Login failed — user not found: ${email}`);
             return res.status(400).json({ message: 'User not found. Please check your email.' });
-        }
-
-        if (role && user.role !== role) {
-            logger.warn('AUTH', `Login denied — role mismatch for ${email}: expected ${role}, got ${user.role}`);
-            return res.status(403).json({
-                message: `Access denied. This account is registered as ${user.role}, not ${role}.`,
-            });
         }
 
         const isMatch = await bcrypt.compare(password, user.passwordHash);

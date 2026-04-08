@@ -35,7 +35,7 @@ const ForgotPassword = () => {
       </div>
 
       <div className="auth-container">
-        <button className="auth-back" onClick={() => navigate('/role-selection?action=login')}>
+        <button className="auth-back" onClick={() => navigate('/login')}>
           <ArrowLeft size={15} />
           Back
         </button>
@@ -69,7 +69,7 @@ const ForgotPassword = () => {
         </form>
 
         <div className="auth-link">
-          <p>Remember your password? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/role-selection?action=login') }}>Sign in</a></p>
+          <p>Remember your password? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login') }}>Sign in</a></p>
         </div>
       </div>
     </div>

@@ -18,13 +18,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
         // Redirect to the user's appropriate dashboard
-        const dashboardMap = {
-            student: '/student',
-            teacher: '/teacher',
-            expert: '/expert',
-            admin: '/teacher',
-        };
-        return <Navigate to={dashboardMap[user.role] || '/'} replace />;
+        return <Navigate to="/home" replace />;
     }
 
     return children;

@@ -19,7 +19,6 @@ const signupSchema = z.object({
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
     password: z.string().min(1, 'Password is required'),
-    role: z.enum(['student', 'teacher', 'expert', 'admin']).optional(),
 });
 
 const forgotPasswordSchema = z.object({

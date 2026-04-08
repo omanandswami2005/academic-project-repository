@@ -367,8 +367,6 @@ const StudentDashboard = () => {
 
   return (
     <DashboardLayout
-      pageTitle="Student Command Center"
-      pageDescription="Track submissions, progress, analytics, and profile from one place."
       onLogout={handleLogout}
     >
       <div className="student-dashboard">
@@ -389,6 +387,10 @@ const StudentDashboard = () => {
         />
 
         <main className="dashboard-main">
+          <div className="page-heading">
+            <h1>Student Command Center</h1>
+            <p>Track submissions, progress, analytics, and profile from one place.</p>
+          </div>
 
           {activeSection === 'tasks' && (
             <section className="card task-board" id="tasks">

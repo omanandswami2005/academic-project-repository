@@ -53,7 +53,7 @@ const LandingPage = () => {
           >
             {isDark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
-          <button className="btn btn-ghost" onClick={() => navigate('/role-selection?action=login')}>
+          <button className="btn btn-ghost" onClick={() => navigate('/login')}>
             Log in
           </button>
           <button className="btn btn-primary" onClick={() => navigate('/role-selection?action=signup')}>
@@ -78,7 +78,7 @@ const LandingPage = () => {
             Get Started
             <ArrowRight size={16} />
           </button>
-          <button className="btn btn-secondary btn-lg" onClick={() => navigate('/role-selection?action=login')}>
+          <button className="btn btn-secondary btn-lg" onClick={() => navigate('/login')}>
             Log in
           </button>
         </div>

@@ -22,7 +22,7 @@ function App() {
       {/* Public routes — redirect to dashboard if already authenticated */}
       <Route path="/" element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>} />
       <Route path="/role-selection" element={<PublicOnlyRoute><RoleSelection /></PublicOnlyRoute>} />
-      <Route path="/login/:role" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+      <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
       <Route path="/signup/:role" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
       {/* forgot/reset-password are intentionally always accessible */}
       <Route path="/forgot-password" element={<ForgotPassword />} />

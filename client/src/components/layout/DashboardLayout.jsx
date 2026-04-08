@@ -157,15 +157,9 @@ const DashboardLayout = ({ pageTitle, pageDescription, onLogout, children }) => 
           )}
         </div>
       </header>
-      <main className="layout-content">
-        {(pageTitle || pageDescription) && (
-          <div className="layout-heading">
-            {pageTitle && <h1>{pageTitle}</h1>}
-            {pageDescription && <p>{pageDescription}</p>}
-          </div>
-        )}
+      <div className="app-body">
         {children}
-      </main>
+      </div>
     </div>
   )
 }

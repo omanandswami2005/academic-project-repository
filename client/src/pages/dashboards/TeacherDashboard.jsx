@@ -324,8 +324,6 @@ const TeacherDashboard = () => {
 
   return (
     <DashboardLayout
-      pageTitle="Teacher Control Center"
-      pageDescription="Track all student projects, branches, and document reviews."
       onLogout={handleLogout}
     >
       <div className="teacher-dashboard">

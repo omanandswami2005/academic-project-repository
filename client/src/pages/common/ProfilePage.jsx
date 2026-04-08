@@ -123,10 +123,12 @@ const ProfilePage = () => {
   }
 
   return (
-    <DashboardLayout
-      pageTitle="Profile & Settings"
-      pageDescription="Update your contact details, profile image, and account preferences."
-    >
+    <DashboardLayout>
+      <main className="page-content">
+        <div className="page-heading">
+          <h1>Profile & Settings</h1>
+          <p>Update your contact details, profile image, and account preferences.</p>
+        </div>
       <div className="support-grid">
         <section className="support-card">
           <h3>Profile Overview</h3>
@@ -360,6 +362,7 @@ const ProfilePage = () => {
           </div>
         </div>
       )}
+      </main>
     </DashboardLayout>
   )
 }

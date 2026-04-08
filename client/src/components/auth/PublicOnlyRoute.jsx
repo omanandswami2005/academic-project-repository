@@ -2,10 +2,10 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const DASHBOARD_MAP = {
-    student: '/student',
-    teacher: '/teacher',
-    expert: '/expert',
-    admin: '/teacher',
+    student: '/home',
+    teacher: '/home',
+    expert: '/home',
+    admin: '/home',
 };
 
 /**

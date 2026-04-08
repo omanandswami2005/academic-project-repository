@@ -34,7 +34,7 @@ const RoleSelection = () => {
     if (action === 'signup') {
       navigate(`/signup/${roleId}`)
     } else {
-      navigate(`/login/${roleId}`)
+      navigate('/login')
     }
   }
 

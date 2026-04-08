@@ -215,10 +215,12 @@ const IndustryExpertDashboard = () => {
   }
 
   return (
-    <DashboardLayout
-      pageTitle="Industry Expert Review"
-      pageDescription="Browse curated student projects, inspect artifacts, and leave structured feedback."
-    >
+    <DashboardLayout>
+      <main className="page-content">
+        <div className="page-heading">
+          <h1>Industry Expert Review</h1>
+          <p>Browse curated student projects, inspect artifacts, and leave structured feedback.</p>
+        </div>
       <div className="expert-dashboard">
         <section className="expert-hero card fade-up">
           <div className="hero-intro">
@@ -673,6 +675,7 @@ const IndustryExpertDashboard = () => {
           </div>
         </div>
       )}
+      </main>
     </DashboardLayout>
   )
 }

@@ -61,7 +61,7 @@ const SignupPage = () => {
 
       await authAPI.signup(dataToSend)
       toast.success('Account created successfully!')
-      navigate(`/login/${role}`)
+      navigate('/login')
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error signing up. Please try again.')
     } finally {
@@ -209,7 +209,7 @@ const SignupPage = () => {
         </form>
 
         <div className="auth-link">
-          <p>Already have an account? <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/login/${role}`) }}>Sign in</a></p>
+          <p>Already have an account? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login') }}>Sign in</a></p>
         </div>
       </div>
     </div>

@@ -44,7 +44,7 @@ const ResetPassword = () => {
       await authAPI.resetPassword(token, formData.password)
       toast.success('Password reset successful! Redirecting...')
       setTimeout(() => {
-        navigate('/role-selection?action=login')
+        navigate('/login')
       }, 2000)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Reset failed. The link may be invalid or expired.')
@@ -69,7 +69,7 @@ const ResetPassword = () => {
       </div>
 
       <div className="auth-container">
-        <button className="auth-back" onClick={() => navigate('/role-selection?action=login')}>
+        <button className="auth-back" onClick={() => navigate('/login')}>
           <ArrowLeft size={15} />
           Back
         </button>
@@ -130,7 +130,7 @@ const ResetPassword = () => {
         </form>
 
         <div className="auth-link">
-          <p>Remember your password? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/role-selection?action=login') }}>Sign in</a></p>
+          <p>Remember your password? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login') }}>Sign in</a></p>
         </div>
       </div>
     </div>

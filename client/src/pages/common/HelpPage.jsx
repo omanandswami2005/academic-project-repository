@@ -21,10 +21,12 @@ const helpArticles = [
 ]
 
 const HelpPage = () => (
-  <DashboardLayout
-    pageTitle="Help & FAQ"
-    pageDescription="Quick answers to common questions across uploads, tracking, and communication."
-  >
+  <DashboardLayout>
+    <main className="page-content">
+      <div className="page-heading">
+        <h1>Help & FAQ</h1>
+        <p>Quick answers to common questions across uploads, tracking, and communication.</p>
+      </div>
     <div className="support-grid">
       <section className="support-card">
         <h3>Frequently Asked</h3>
@@ -51,6 +53,7 @@ const HelpPage = () => (
         </div>
       </section>
     </div>
+    </main>
   </DashboardLayout>
 )
 

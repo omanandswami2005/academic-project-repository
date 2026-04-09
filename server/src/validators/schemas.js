@@ -63,6 +63,8 @@ const createProjectSchema = z.object({
     domainTags: z.array(z.string()).optional().default([]),
     visibility: z.enum(['public', 'private', 'department']).optional().default('private'),
     groupMembers: z.array(z.number()).optional().default([]),
+    categoryId: z.coerce.number().int().positive().optional(),
+    semester: z.coerce.number().int().min(1).max(12).optional(),
 });
 
 const updateProjectSchema = z.object({
@@ -84,7 +86,7 @@ const updatePhaseSchema = z.object({
 
 const updatePhasesSchema = z.object({
     phases: z.array(z.object({
-        phaseNumber: z.number().int().min(1).max(6),
+        phaseNumber: z.number().int().min(1).max(100),
         completed: z.boolean().optional(),
         description: z.string().optional(),
     })),
@@ -112,6 +114,7 @@ const projectFilterSchema = z.object({
     domain: z.string().optional(),
     visibility: z.enum(['public', 'private', 'department']).optional(),
     search: z.string().optional(),
+    categoryId: z.coerce.number().int().positive().optional(),
 });
 
 const idParamSchema = z.object({

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Upload,
@@ -8,89 +8,39 @@ import {
   CheckSquare,
   Activity,
   BookOpen,
-  ExternalLink,
   Star,
   Edit,
   Trash2,
   Save,
   X,
   Folder,
+  FolderOpen,
   BarChart3,
   Mail,
   GitFork,
   UserPlus,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  Eye,
+  Search,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react'
 import './StudentDashboard.css'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import AppSidebar from '../../components/layout/AppSidebar'
 import Button from '../../components/ui/Button'
+import DocPreview from '../../components/ui/DocPreview'
 import { useAuth } from '../../context/AuthContext'
-import { projectAPI, feedbackAPI, studentAPI } from '../../services/api'
+import { projectAPI, feedbackAPI, userAPI, categoryAPI, analyticsAPI } from '../../services/api'
+import { useDebounce } from '../../utils/useDebounce'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import toast from 'react-hot-toast'
+import { formatDateIST } from '../../utils/date'
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 
-
-const skillResources = [
-  {
-    id: 's1',
-    skill: 'Data Structures & Algorithms (DSA)',
-    channel: 'CodeHelp',
-    link: 'https://www.youtube.com/@CodeHelp',
-    description: 'Comprehensive DSA tutorials and problem-solving strategies'
-  },
-  {
-    id: 's2',
-    skill: 'Web Development',
-    channel: 'Traversy Media',
-    link: 'https://www.youtube.com/@TraversyMedia',
-    description: 'Full-stack web development tutorials and projects'
-  },
-  {
-    id: 's3',
-    skill: 'Machine Learning',
-    channel: '3Blue1Brown',
-    link: 'https://www.youtube.com/@3blue1brown',
-    description: 'Visual explanations of machine learning concepts'
-  },
-  {
-    id: 's4',
-    skill: 'React.js',
-    channel: 'Code with Harry',
-    link: 'https://www.youtube.com/@CodeWithHarry',
-    description: 'React.js tutorials and modern web development'
-  },
-  {
-    id: 's5',
-    skill: 'Python Programming',
-    channel: 'Corey Schafer',
-    link: 'https://www.youtube.com/@coreyms',
-    description: 'Python programming tutorials and best practices'
-  },
-  {
-    id: 's6',
-    skill: 'System Design',
-    channel: 'Gaurav Sen',
-    link: 'https://www.youtube.com/@gkcs',
-    description: 'System design interviews and architecture patterns'
-  },
-  {
-    id: 's7',
-    skill: 'JavaScript',
-    channel: 'Akshay Saini',
-    link: 'https://www.youtube.com/@akshaymarch7',
-    description: 'JavaScript fundamentals and advanced concepts'
-  },
-  {
-    id: 's8',
-    skill: 'DevOps',
-    channel: 'Kunal Kushwaha',
-    link: 'https://www.youtube.com/@kunalkushwaha',
-    description: 'DevOps, cloud computing, and open source contributions'
-  }
-]
 
 const StudentDashboard = () => {
   const navigate = useNavigate()
@@ -122,11 +72,50 @@ const StudentDashboard = () => {
 
   // FR9: Mentor request
   const [teachers, setTeachers] = useState([])
+  const [selectedMentor, setSelectedMentor] = useState('')
   const [mentorRequesting, setMentorRequesting] = useState(false)
 
   // FR3/33: Fork / browse
   const [publicProjects, setPublicProjects] = useState([])
   const [forking, setForking] = useState(null)
+
+  // NEW: Upload modal
+  const [showUploadModal, setShowUploadModal] = useState(false)
+
+  // NEW: Collapsible projects + search
+  const [expandedProjects, setExpandedProjects] = useState({})
+  const [projectSearch, setProjectSearch] = useState('')
+  const debouncedProjectSearch = useDebounce(projectSearch, 300)
+
+  // NEW: Multi-project Kanban
+  const [selectedKanbanProject, setSelectedKanbanProject] = useState(null)
+
+  // NEW: Kanban batch save (debounce)
+  const kanbanTimer = useRef(null)
+  const pendingPhasesRef = useRef(null)
+
+  // NEW: Doc preview
+  const [previewFile, setPreviewFile] = useState(null)
+
+  // NEW: Custom phase CRUD
+  const [newPhaseName, setNewPhaseName] = useState('')
+  const [renamingPhase, setRenamingPhase] = useState(null)
+  const [renameValue, setRenameValue] = useState('')
+
+  // NEW: Phase file upload
+  const [phaseFileInputs, setPhaseFileInputs] = useState({})
+  const [uploadingPhaseFile, setUploadingPhaseFile] = useState(null)
+
+  // Category & semester for project creation
+  const [categories, setCategories] = useState([])
+  const [categorySearch, setCategorySearch] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const [projectSemester, setProjectSemester] = useState('')
+
+  // Analytics data
+  const [analyticsData, setAnalyticsData] = useState(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
   // Fetch student's projects
   const fetchMyProjects = async () => {
@@ -171,8 +160,8 @@ const StudentDashboard = () => {
     }
     const fetchTeachers = async () => {
       try {
-        const { data } = await studentAPI.getAll()
-        // teachers are fetched separately - use the users list if available
+        const { data } = await userAPI.getTeachers()
+        setTeachers(data.teachers || [])
       } catch { /* ignore */ }
     }
     const fetchPublicProjects = async () => {
@@ -181,9 +170,31 @@ const StudentDashboard = () => {
         setPublicProjects((data.projects || []).filter(p => p.studentId !== user.id))
       } catch { /* ignore */ }
     }
+    const fetchCategories = async () => {
+      try {
+        const { data } = await categoryAPI.getAll()
+        setCategories(data.categories || [])
+      } catch { /* ignore */ }
+    }
     fetchInvitations()
+    fetchTeachers()
     fetchPublicProjects()
+    fetchCategories()
   }, [user])
+
+  // Fetch analytics when section is active
+  useEffect(() => {
+    if (activeSection !== 'analytics' || !user || analyticsData) return
+    const fetchAnalytics = async () => {
+      setAnalyticsLoading(true)
+      try {
+        const { data } = await analyticsAPI.getStudentSummary(user.id)
+        setAnalyticsData(data)
+      } catch { /* non-critical */ }
+      finally { setAnalyticsLoading(false) }
+    }
+    fetchAnalytics()
+  }, [activeSection, user])
 
   // FR7: Invite a member by email
   const handleInviteMember = async (projectId) => {
@@ -259,6 +270,103 @@ const StudentDashboard = () => {
     setSelectedFiles(files)
   }
 
+  // Toggle project expand/collapse
+  const toggleProjectExpand = (projectId) => {
+    setExpandedProjects(prev => ({ ...prev, [projectId]: !prev[projectId] }))
+  }
+
+  // Filtered projects for search
+  const filteredProjects = useMemo(() => {
+    if (!debouncedProjectSearch.trim()) return myProjects
+    const q = debouncedProjectSearch.toLowerCase()
+    return myProjects.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      (p.description || '').toLowerCase().includes(q) ||
+      (p.domainTags || []).some(t => t.toLowerCase().includes(q))
+    )
+  }, [myProjects, debouncedProjectSearch])
+
+  // ── Kanban: selected project
+  const kanbanProject = useMemo(() => {
+    if (myProjects.length === 0) return null
+    if (selectedKanbanProject) return myProjects.find(p => p.id === selectedKanbanProject) || myProjects[0]
+    return myProjects[0]
+  }, [myProjects, selectedKanbanProject])
+
+  // ── Kanban batch save (debounced) ──
+  const flushKanbanChanges = useCallback(async () => {
+    const pending = pendingPhasesRef.current
+    if (!pending) return
+    pendingPhasesRef.current = null
+    try {
+      await projectAPI.updatePhases(pending.projectId, pending.phases)
+    } catch {
+      toast.error('Failed to save board changes')
+      fetchMyProjects()
+    }
+  }, [])
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => { if (kanbanTimer.current) clearTimeout(kanbanTimer.current) }
+  }, [])
+
+  // ── Custom phase CRUD ──
+  const handleCreatePhase = async (projectId) => {
+    if (!newPhaseName.trim()) return
+    try {
+      await projectAPI.createPhase(projectId, newPhaseName.trim())
+      toast.success('Phase created!')
+      setNewPhaseName('')
+      fetchMyProjects()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to create phase')
+    }
+  }
+
+  const handleRenamePhase = async (projectId, phaseId) => {
+    if (!renameValue.trim()) return
+    try {
+      await projectAPI.renamePhase(projectId, phaseId, renameValue.trim())
+      toast.success('Phase renamed!')
+      setRenamingPhase(null)
+      setRenameValue('')
+      fetchMyProjects()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to rename phase')
+    }
+  }
+
+  const handleDeletePhase = async (projectId, phaseId, phaseName) => {
+    if (!window.confirm(`Delete phase "${phaseName}"? This will also remove all files uploaded to this phase. This action cannot be undone.`)) return
+    try {
+      await projectAPI.deletePhase(projectId, phaseId)
+      toast.success('Phase deleted!')
+      fetchMyProjects()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete phase')
+    }
+  }
+
+  // ── Phase file upload ──
+  const handlePhaseFileUpload = async (projectId, phaseId) => {
+    const files = phaseFileInputs[phaseId]
+    if (!files || files.length === 0) return
+    setUploadingPhaseFile(phaseId)
+    const formData = new FormData()
+    files.forEach(f => formData.append('files', f))
+    try {
+      await projectAPI.uploadPhaseFile(projectId, phaseId, formData)
+      toast.success('Files uploaded to phase!')
+      setPhaseFileInputs(prev => ({ ...prev, [phaseId]: null }))
+      fetchMyProjects()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to upload phase files')
+    } finally {
+      setUploadingPhaseFile(null)
+    }
+  }
+
   // Handle project form submission
   const handleProjectSubmit = async (e) => {
     e.preventDefault()
@@ -285,6 +393,12 @@ const StudentDashboard = () => {
         formData.append('domainTags', JSON.stringify(projectForm.domainTags.split(',').map(t => t.trim()).filter(Boolean)))
       }
       formData.append('visibility', projectForm.visibility || 'public')
+      if (selectedCategory) {
+        formData.append('categoryId', selectedCategory.id)
+      }
+      if (projectSemester) {
+        formData.append('semester', projectSemester)
+      }
 
       selectedFiles.forEach((file) => {
         formData.append('files', file)
@@ -296,8 +410,10 @@ const StudentDashboard = () => {
       toast.success('Project uploaded successfully!')
       setProjectForm({ projectName: '', description: '', domainTags: '', visibility: 'public' })
       setSelectedFiles([])
-      const fileInput = document.getElementById('project-files')
-      if (fileInput) fileInput.value = ''
+      setSelectedCategory(null)
+      setCategorySearch('')
+      setProjectSemester('')
+      setShowUploadModal(false)
 
       fetchMyProjects()
       setTimeout(() => setUploadSuccess(false), 3000)
@@ -418,30 +534,45 @@ const StudentDashboard = () => {
     setPhaseDescription('')
   }
 
-  // ── Drag & Drop handler for Kanban ──
+  // ── Drag & Drop handler for Kanban (batched) ──
   const handleDragEnd = (result) => {
     const { source, destination, draggableId } = result
     if (!destination) return
     if (source.droppableId === destination.droppableId && source.index === destination.index) return
-    if (myProjects.length === 0) return
+    if (!kanbanProject) return
 
-    const project = myProjects[0]
     const phaseNumber = Number(draggableId)
-    const phase = (project.phases || []).find(p => p.phaseNumber === phaseNumber)
-    if (!phase) return
+    const phases = [...(kanbanProject.phases || [])]
+    const phaseIdx = phases.findIndex(p => p.phaseNumber === phaseNumber)
+    if (phaseIdx === -1) return
 
-    const targetColumn = destination.droppableId // 'todo' | 'inProgress' | 'done'
+    const targetColumn = destination.droppableId
+    const updatedPhase = { ...phases[phaseIdx] }
 
     if (targetColumn === 'done') {
-      // Mark completed
-      updateProjectPhase(project.id, phaseNumber, true, phase.description || '')
+      updatedPhase.completed = true
+      updatedPhase.completedAt = new Date().toISOString()
     } else if (targetColumn === 'inProgress') {
-      // Uncomplete if was done, set description placeholder if empty
-      updateProjectPhase(project.id, phaseNumber, false, phase.description || 'In progress')
+      updatedPhase.completed = false
+      updatedPhase.completedAt = null
+      if (!updatedPhase.description) updatedPhase.description = 'In progress'
     } else {
-      // Move to todo — uncomplete and clear description
-      updateProjectPhase(project.id, phaseNumber, false, '')
+      updatedPhase.completed = false
+      updatedPhase.completedAt = null
+      updatedPhase.description = ''
     }
+
+    phases[phaseIdx] = updatedPhase
+
+    // Optimistic local update
+    setMyProjects(prev => prev.map(p =>
+      p.id === kanbanProject.id ? { ...p, phases } : p
+    ))
+
+    // Queue for batch save
+    pendingPhasesRef.current = { projectId: kanbanProject.id, phases }
+    if (kanbanTimer.current) clearTimeout(kanbanTimer.current)
+    kanbanTimer.current = setTimeout(flushKanbanChanges, 1500)
   }
 
   // Render stars
@@ -471,13 +602,12 @@ const StudentDashboard = () => {
         <AppSidebar
           items={[
             { id: 'tasks', label: 'Task Board', icon: CheckSquare },
-            { id: 'uploads', label: 'Uploads', icon: Upload },
+            { id: 'projects', label: 'Projects', icon: FolderOpen },
             { id: 'invitations', label: 'Invitations', icon: Mail, badge: invitations.length },
             { id: 'browse', label: 'Browse & Fork', icon: GitFork },
             { id: 'progress', label: 'Progress', icon: FileText },
             { id: 'feedback', label: 'Feedback', icon: MessageSquare },
             { id: 'analytics', label: 'Analytics', icon: Activity },
-            { id: 'skills', label: 'Skill Development', icon: BookOpen },
           ]}
           activeSection={activeSection}
           onSectionChange={handleSectionChange}
@@ -497,11 +627,23 @@ const StudentDashboard = () => {
               <div className="section-header">
                 <div>
                   <h3>Kanban Board</h3>
-                  <p>{myProjects.length > 0 ? `${(myProjects[0].phases || []).filter(p => p.completed).length} / ${(myProjects[0].phases || []).length} phases done` : 'No projects yet'}</p>
+                  <p>{kanbanProject ? `${(kanbanProject.phases || []).filter(p => p.completed).length} / ${(kanbanProject.phases || []).length} phases done` : 'No projects yet'}</p>
                 </div>
+                {myProjects.length > 1 && (
+                  <select
+                    className="form-input"
+                    style={{ width: 'auto', minWidth: '200px' }}
+                    value={selectedKanbanProject || ''}
+                    onChange={(e) => setSelectedKanbanProject(Number(e.target.value))}
+                  >
+                    {myProjects.map(p => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
+                )}
               </div>
-              {myProjects.length > 0 ? (() => {
-                const phases = myProjects[0].phases || []
+              {kanbanProject ? (() => {
+                const phases = kanbanProject.phases || []
                 const todo = phases.filter(p => !p.completed && !p.description)
                 const inProgress = phases.filter(p => !p.completed && p.description)
                 const done = phases.filter(p => p.completed)
@@ -546,21 +688,34 @@ const StudentDashboard = () => {
                                         </div>
                                         <p className="kanban-card-desc">{phase.description || 'No description'}</p>
                                         {col.id === 'done' && phase.completedAt && (
-                                          <small className="kanban-card-date">{new Date(phase.completedAt).toLocaleDateString()}</small>
+                                          <small className="kanban-card-date">{formatDateIST(phase.completedAt)}</small>
                                         )}
+                                        {/* Phase files on kanban card */}
+                                        {(() => {
+                                          const phaseFiles = (kanbanProject.files || []).filter(f => f.phaseId === phase.id)
+                                          return phaseFiles.length > 0 ? (
+                                            <div className="kanban-card-files">
+                                              {phaseFiles.map(f => (
+                                                <button key={f.id} type="button" className="kanban-file-btn" onClick={() => setPreviewFile(f)} title={f.originalName}>
+                                                  <Eye size={11} /> {f.originalName.length > 18 ? f.originalName.slice(0, 18) + '…' : f.originalName}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          ) : null
+                                        })()}
                                         <div className="kanban-card-actions">
                                           {col.id !== 'done' && (
-                                            <button type="button" className="kanban-action-btn" onClick={() => startEditingPhase(myProjects[0].id, phase.phaseNumber)}>
+                                            <button type="button" className="kanban-action-btn" onClick={() => startEditingPhase(kanbanProject.id, phase.phaseNumber)}>
                                               <Edit size={13} /> {phase.description ? 'Edit' : 'Add Details'}
                                             </button>
                                           )}
                                           {col.id !== 'done' && (
-                                            <button type="button" className="kanban-action-btn done" onClick={() => togglePhase(myProjects[0].id, phase.phaseNumber)}>
+                                            <button type="button" className="kanban-action-btn done" onClick={() => togglePhase(kanbanProject.id, phase.phaseNumber)}>
                                               <CheckCircle size={13} /> Mark Done
                                             </button>
                                           )}
                                           {col.id === 'done' && (
-                                            <button type="button" className="kanban-action-btn undo" onClick={() => togglePhase(myProjects[0].id, phase.phaseNumber)}>
+                                            <button type="button" className="kanban-action-btn undo" onClick={() => togglePhase(kanbanProject.id, phase.phaseNumber)}>
                                               <X size={13} /> Undo
                                             </button>
                                           )}
@@ -619,317 +774,371 @@ const StudentDashboard = () => {
             </section>
           )}
 
-          {activeSection === 'uploads' && (
-            <section className="card upload-center" id="uploads">
+          {activeSection === 'projects' && (
+            <section className="card upload-center" id="projects">
               <div className="section-header">
                 <div>
-                  <h3>Project Upload Center</h3>
-                  <p>Upload your project with details and files</p>
+                  <h3>My Projects</h3>
+                  <p>Manage your projects, phases, and files</p>
                 </div>
+                <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={() => setShowUploadModal(true)}>
+                  New Project
+                </Button>
               </div>
 
-              {uploadSuccess && (
-                <div className="success-message">
-                  <CheckCircle size={18} />
-                  Project uploaded successfully! Your teacher can now view it.
-                </div>
-              )}
-
-              <form className="project-upload-form" onSubmit={handleProjectSubmit}>
-                <div className="form-group">
-                  <label htmlFor="project-name">
-                    Project Name <span className="required">*</span>
-                  </label>
+              {/* Search bar */}
+              {myProjects.length > 1 && (
+                <div className="project-search-bar">
+                  <Search size={15} />
                   <input
                     type="text"
-                    id="project-name"
+                    placeholder="Search projects by name, description, or tag…"
+                    value={projectSearch}
+                    onChange={(e) => setProjectSearch(e.target.value)}
                     className="form-input"
-                    placeholder="Enter your project name"
-                    value={projectForm.projectName}
-                    onChange={(e) => setProjectForm({ ...projectForm, projectName: e.target.value })}
-                    required
                   />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="project-description">
-                    Project Description <span className="required">*</span>
-                  </label>
-                  <textarea
-                    id="project-description"
-                    className="form-textarea"
-                    rows="5"
-                    placeholder="Describe your project, its features, technologies used, etc."
-                    value={projectForm.description}
-                    onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="project-files">
-                    Upload Files (PDF, Images, Code, Documents, etc.)
-                  </label>
-                  <div className="file-upload-wrapper">
-                    <input
-                      type="file"
-                      id="project-files"
-                      className="file-input"
-                      multiple
-                      onChange={handleFileChange}
-                    />
-                    <label htmlFor="project-files" className="file-upload-label">
-                      <Upload size={18} />
-                      Choose Files
-                    </label>
-                  </div>
-                  {selectedFiles.length > 0 && (
-                    <div className="selected-files">
-                      <p className="files-header">Selected Files ({selectedFiles.length}):</p>
-                      {selectedFiles.map((file, index) => (
-                        <div key={index} className="file-item">
-                          <FileText size={16} />
-                          <span className="file-name">{file.name}</span>
-                          <span className="file-size">{formatFileSize(file.size)}</span>
-                          <button
-                            type="button"
-                            className="remove-file-btn"
-                            onClick={() => removeFile(index)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  fullWidth
-                  disabled={uploading}
-                  loading={uploading}
-                  icon={!uploading ? <Upload size={16} /> : undefined}
-                >
-                  {uploading ? 'Uploading...' : 'Upload Project'}
-                </Button>
-              </form>
-
-              {!projectsLoading && myProjects.length === 0 && (
-                <div style={{ padding: '32px', textAlign: 'center', backgroundColor: 'var(--bg-secondary, #f9fafb)', borderRadius: '8px', marginTop: '16px' }}>
-                  <Folder size={48} style={{ color: 'var(--text-muted, gray)', margin: '0 auto 16px' }} />
-                  <h4 style={{ marginBottom: '8px' }}>No projects yet</h4>
-                  <p style={{ color: 'var(--text-muted, gray)', marginBottom: '16px' }}>You haven't uploaded any projects. Upload one above to get started.</p>
-                  <Button variant="primary" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Upload a Project</Button>
                 </div>
               )}
 
+              {/* Upload modal */}
+              {showUploadModal && (
+                <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
+                  <div className="modal-content" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                      <h3>Upload New Project</h3>
+                      <button type="button" className="btn-icon" onClick={() => setShowUploadModal(false)}><X size={18} /></button>
+                    </div>
+                    {uploadSuccess && (
+                      <div className="success-message">
+                        <CheckCircle size={18} />
+                        Project uploaded successfully!
+                      </div>
+                    )}
+                    <form className="project-upload-form" onSubmit={handleProjectSubmit}>
+                      <div className="form-group">
+                        <label htmlFor="project-name">Project Name <span className="required">*</span></label>
+                        <input type="text" id="project-name" className="form-input" placeholder="Enter your project name" value={projectForm.projectName} onChange={(e) => setProjectForm({ ...projectForm, projectName: e.target.value })} required />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="project-description">Project Description <span className="required">*</span></label>
+                        <textarea id="project-description" className="form-textarea" rows="4" placeholder="Describe your project…" value={projectForm.description} onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })} required />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="project-tags">Domain Tags (comma separated)</label>
+                        <input type="text" id="project-tags" className="form-input" placeholder="e.g. React, Machine Learning" value={projectForm.domainTags} onChange={(e) => setProjectForm({ ...projectForm, domainTags: e.target.value })} />
+                      </div>
+                      <div className="form-group">
+                        <label>Project Category</label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="Search categories..."
+                            value={selectedCategory ? selectedCategory.name : categorySearch}
+                            onChange={(e) => { setCategorySearch(e.target.value); setSelectedCategory(null); setShowCategoryDropdown(true) }}
+                            onFocus={() => setShowCategoryDropdown(true)}
+                            onBlur={() => setTimeout(() => setShowCategoryDropdown(false), 200)}
+                          />
+                          {showCategoryDropdown && (
+                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '6px', maxHeight: '160px', overflowY: 'auto', zIndex: 10 }}>
+                              {categories
+                                .filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                                .map(c => (
+                                  <div key={c.id} style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '0.875rem', borderBottom: '1px solid var(--border-subtle)' }}
+                                    onMouseDown={() => { setSelectedCategory(c); setCategorySearch(''); setShowCategoryDropdown(false) }}>
+                                    {c.name} {c.branch && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>({c.branch})</span>}
+                                  </div>
+                                ))}
+                              {categories.filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase())).length === 0 && (
+                                <div style={{ padding: '8px 12px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>No categories found</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {selectedCategory && (
+                          <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ padding: '2px 8px', background: 'var(--accent-subtle)', borderRadius: '12px', fontSize: '0.75rem' }}>{selectedCategory.name}</span>
+                            <button type="button" onClick={() => setSelectedCategory(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem' }}>×</button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="project-semester">Semester</label>
+                        <select id="project-semester" className="form-input" value={projectSemester} onChange={(e) => setProjectSemester(e.target.value)}>
+                          <option value="">Select semester (optional)</option>
+                          {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Semester {s}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="project-files">Upload Files</label>
+                        <div className="file-upload-wrapper">
+                          <input type="file" id="project-files" className="file-input" multiple onChange={handleFileChange} />
+                          <label htmlFor="project-files" className="file-upload-label"><Upload size={18} /> Choose Files</label>
+                        </div>
+                        {selectedFiles.length > 0 && (
+                          <div className="selected-files">
+                            <p className="files-header">Selected ({selectedFiles.length}):</p>
+                            {selectedFiles.map((file, index) => (
+                              <div key={index} className="file-item">
+                                <FileText size={16} />
+                                <span className="file-name">{file.name}</span>
+                                <span className="file-size">{formatFileSize(file.size)}</span>
+                                <button type="button" className="remove-file-btn" onClick={() => removeFile(index)}>×</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <Button type="submit" variant="primary" fullWidth disabled={uploading} loading={uploading} icon={!uploading ? <Upload size={16} /> : undefined}>
+                        {uploading ? 'Uploading…' : 'Upload Project'}
+                      </Button>
+                    </form>
+                  </div>
+                </div>
+              )}
 
+              {/* Empty state */}
+              {!projectsLoading && myProjects.length === 0 && (
+                <div style={{ padding: '32px', textAlign: 'center', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', marginTop: '16px' }}>
+                  <Folder size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 16px' }} />
+                  <h4 style={{ marginBottom: '8px' }}>No projects yet</h4>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Upload your first project to get started.</p>
+                  <Button variant="primary" onClick={() => setShowUploadModal(true)}>Create Project</Button>
+                </div>
+              )}
 
+              {/* Loading skeleton */}
               {projectsLoading && myProjects.length === 0 && (
                 <div className="my-projects-section">
-                  <h4>My Uploaded Projects</h4>
-                  <div className="projects-list">
-                    {[1, 2].map(i => (
-                      <div key={i} className="project-item" style={{ animation: 'pulse 1.5s infinite', backgroundColor: 'var(--bg-secondary, #f9fafb)' }}>
-                        <div style={{ height: '24px', backgroundColor: 'var(--border-subtle, #e5e7eb)', borderRadius: '4px', width: '40%', marginBottom: '12px' }} />
-                        <div style={{ height: '16px', backgroundColor: 'var(--border-subtle, #e5e7eb)', borderRadius: '4px', width: '80%', marginBottom: '8px' }} />
-                        <div style={{ height: '16px', backgroundColor: 'var(--border-subtle, #e5e7eb)', borderRadius: '4px', width: '60%' }} />
-                      </div>
-                    ))}
-                  </div>
+                  {[1, 2].map(i => (
+                    <div key={i} className="project-item" style={{ animation: 'pulse 1.5s infinite', backgroundColor: 'var(--bg-secondary)' }}>
+                      <div style={{ height: '24px', backgroundColor: 'var(--border-subtle)', borderRadius: '4px', width: '40%', marginBottom: '12px' }} />
+                      <div style={{ height: '16px', backgroundColor: 'var(--border-subtle)', borderRadius: '4px', width: '80%' }} />
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {!projectsLoading && myProjects.length > 0 && (
+              {/* Collapsible project cards */}
+              {!projectsLoading && filteredProjects.length > 0 && (
                 <div className="my-projects-section">
-                  <h4>My Uploaded Projects</h4>
                   <div className="projects-list">
-                    {myProjects.map(project => {
+                    {filteredProjects.map(project => {
                       const phases = project.phases || []
                       const stars = project.stars || 0
+                      const isExpanded = expandedProjects[project.id]
+                      const projectFiles = project.files || []
 
                       return (
                         <div key={project.id} className="project-item">
-                          <div className="project-item-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              {editingProject === project.id ? (
-                                <input className="form-input" value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} />
-                              ) : (
-                                <h5>{project.title}</h5>
-                              )}
-                              {renderStars(stars)}
-                            </div>
+                          {/* Collapsible header */}
+                          <div className="project-item-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', cursor: 'pointer' }} onClick={() => toggleProjectExpand(project.id)}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span className={`status-chip ${project.status}`}>
-                                {project.status.replace('_', ' ')}
-                              </span>
-                              <Button variant="ghost" size="sm" onClick={() => editingProject === project.id ? setEditingProject(null) : startEditingProject(project)} aria-label="Edit project">
-                                <Edit size={16} />
-                              </Button>
-                              <Button variant="danger" size="sm" onClick={() => handleDeleteProject(project.id)} aria-label="Delete project">
-                                <Trash2 size={16} />
-                              </Button>
+                              {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                              <div>
+                                {editingProject === project.id ? (
+                                  <input className="form-input" value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} onClick={e => e.stopPropagation()} />
+                                ) : (
+                                  <h5>{project.title}</h5>
+                                )}
+                                {renderStars(stars)}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={e => e.stopPropagation()}>
+                              <span className={`status-chip ${project.status}`}>{project.status.replace('_', ' ')}</span>
+                              <Button variant="ghost" size="sm" onClick={() => editingProject === project.id ? setEditingProject(null) : startEditingProject(project)} aria-label="Edit project"><Edit size={16} /></Button>
+                              <Button variant="danger" size="sm" onClick={() => handleDeleteProject(project.id)} aria-label="Delete project"><Trash2 size={16} /></Button>
                             </div>
                           </div>
-                          {editingProject === project.id ? (
-                            <div style={{ marginTop: '8px', marginBottom: '8px' }}>
-                              <textarea className="form-textarea" rows="3" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} />
-                              <input className="form-input" style={{ marginTop: '8px' }} placeholder="Domain Tags (comma separated)" value={editForm.domainTags} onChange={e => setEditForm({ ...editForm, domainTags: e.target.value })} />
-                              <Button variant="primary" size="sm" style={{ marginTop: '8px' }} onClick={() => saveProjectEdit(project.id)}>Save Changes</Button>
-                            </div>
-                          ) : (
-                            <p className="project-description">{project.description}</p>
-                          )}
-                          <div className="project-meta">
-                            <small>Uploaded: {new Date(project.createdAt).toLocaleDateString()}</small>
-                            <small>ID: {project.uniqueProjectId}</small>
-                          </div>
 
-                          {/* FR7: Invite member */}
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '12px 0', flexWrap: 'wrap' }}>
-                            <input
-                              type="email"
-                              className="form-input"
-                              placeholder="Invite by email..."
-                              value={inviteEmail}
-                              onChange={(e) => setInviteEmail(e.target.value)}
-                              style={{ flex: 1, minWidth: '200px' }}
-                            />
-                            <Button variant="outline" size="sm" icon={<UserPlus size={14} />} disabled={inviting} loading={inviting} onClick={() => handleInviteMember(project.id)}>
-                              Invite
-                            </Button>
-                          </div>
+                          {/* Expanded content */}
+                          {isExpanded && (
+                            <div className="project-expanded-content">
+                              {editingProject === project.id ? (
+                                <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+                                  <textarea className="form-textarea" rows="3" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} />
+                                  <input className="form-input" style={{ marginTop: '8px' }} placeholder="Domain Tags (comma separated)" value={editForm.domainTags} onChange={e => setEditForm({ ...editForm, domainTags: e.target.value })} />
+                                  <Button variant="primary" size="sm" style={{ marginTop: '8px' }} onClick={() => saveProjectEdit(project.id)}>Save Changes</Button>
+                                </div>
+                              ) : (
+                                <p className="project-description">{project.description}</p>
+                              )}
+                              <div className="project-meta">
+                                <small>Uploaded: {formatDateIST(project.createdAt)}</small>
+                                <small>ID: {project.uniqueProjectId}</small>
+                              </div>
 
-                          {/* FR9: Mentor request */}
-                          {(!project.mentorId || project.mentorStatus === 'none') && (
-                            <div style={{ marginBottom: '12px' }}>
-                              <Button variant="outline" size="sm" icon={<BookOpen size={14} />} onClick={() => {
-                                const mentorIdStr = prompt('Enter teacher user ID to request as mentor:')
-                                if (mentorIdStr) handleRequestMentor(project.id, parseInt(mentorIdStr))
-                              }} disabled={mentorRequesting} loading={mentorRequesting}>
-                                Request Mentor
-                              </Button>
-                            </div>
-                          )}
-                          {project.mentorStatus === 'requested' && (
-                            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                              <Clock size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Mentor request pending...
-                            </p>
-                          )}
-                          {project.mentorStatus === 'accepted' && (
-                            <p style={{ fontSize: '0.8125rem', color: 'var(--success, #10b981)', marginBottom: '12px' }}>
-                              <CheckCircle size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Mentor assigned
-                            </p>
-                          )}
+                              {/* FR7: Invite member */}
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '12px 0', flexWrap: 'wrap' }}>
+                                <input type="email" className="form-input" placeholder="Invite by email…" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} style={{ flex: 1, minWidth: '200px' }} />
+                                <Button variant="outline" size="sm" icon={<UserPlus size={14} />} disabled={inviting} loading={inviting} onClick={() => handleInviteMember(project.id)}>Invite</Button>
+                              </div>
 
-                          {/* FR3/33: Forked from info */}
-                          {project.forkedFromId && (
-                            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                              <GitFork size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Forked from project #{project.forkedFromId}
-                            </p>
-                          )}
+                              {/* FR9: Mentor request — teacher dropdown */}
+                              {(!project.mentorId || project.mentorStatus === 'none') && (
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
+                                  <select className="form-input" style={{ flex: 1, minWidth: '200px' }} value={selectedMentor} onChange={(e) => setSelectedMentor(e.target.value)}>
+                                    <option value="">Select a teacher as mentor…</option>
+                                    {teachers.map(t => (
+                                      <option key={t.id} value={t.id}>{t.username} — {t.email} ({t.branch || 'N/A'})</option>
+                                    ))}
+                                  </select>
+                                  <Button variant="outline" size="sm" icon={<BookOpen size={14} />} onClick={() => { if (selectedMentor) handleRequestMentor(project.id, parseInt(selectedMentor)) }} disabled={!selectedMentor || mentorRequesting} loading={mentorRequesting}>
+                                    Request Mentor
+                                  </Button>
+                                </div>
+                              )}
+                              {project.mentorStatus === 'requested' && (
+                                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                                  <Clock size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Mentor request pending…
+                                </p>
+                              )}
+                              {project.mentorStatus === 'accepted' && (
+                                <p style={{ fontSize: '0.8125rem', color: 'var(--success, #10b981)', marginBottom: '12px' }}>
+                                  <CheckCircle size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Mentor assigned
+                                </p>
+                              )}
 
-                          <div className="phases-section">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                              <h5 className="phases-title" style={{ margin: 0 }}>Project Phases</h5>
-                              <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{phases.filter(p => p.completed).length}/{phases.length} phases complete — {Math.round((phases.filter(p => p.completed).length / Math.max(phases.length, 1)) * 100)}%</span>
-                            </div>
+                              {project.forkedFromId && (
+                                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                                  <GitFork size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Forked from project #{project.forkedFromId}
+                                </p>
+                              )}
 
-                            <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
-                              {phases.map(phase => (
-                                <div key={`bar-${phase.phaseNumber}`} style={{ flex: 1, height: '8px', borderRadius: '4px', backgroundColor: phase.completed ? 'var(--accent, #4F46E5)' : 'var(--border-primary, #e5e7eb)' }} />
-                              ))}
-                            </div>
-
-                            <div className="phases-list">
-                              {phases.map(phase => {
-                                const isEditing = editingPhase === `${project.id}-${phase.phaseNumber}`
-
-                                return (
-                                  <div key={phase.phaseNumber} className={`phase-item ${phase.completed ? 'completed' : ''}`}>
-                                    <div className="phase-header">
-                                      <label className="phase-checkbox">
-                                        <input
-                                          type="checkbox"
-                                          checked={phase.completed}
-                                          onChange={() => togglePhase(project.id, phase.phaseNumber)}
-                                        />
-                                        <span className="phase-name">{phase.phaseName}</span>
-                                      </label>
-                                      {phase.completed && phase.completedAt && (
-                                        <small className="phase-date">
-                                          Completed: {new Date(phase.completedAt).toLocaleDateString()}
-                                        </small>
-                                      )}
-                                      {phase.deadline && !phase.completed && (
-                                        <small style={{ color: new Date(phase.deadline) < new Date() ? 'var(--error, #ef4444)' : 'var(--text-muted)', fontWeight: new Date(phase.deadline) < new Date() ? 600 : 400 }}>
-                                          {new Date(phase.deadline) < new Date() ? (
-                                            <><AlertTriangle size={12} style={{ verticalAlign: 'middle', marginRight: '2px' }} /> Overdue</>
-                                          ) : (
-                                            <><Clock size={12} style={{ verticalAlign: 'middle', marginRight: '2px' }} /> Due: {new Date(phase.deadline).toLocaleDateString()}</>
-                                          )}
-                                        </small>
-                                      )}
+                              {/* Project-level files (uploaded at creation, no phase) */}
+                              {(() => {
+                                const generalFiles = projectFiles.filter(f => !f.phaseId)
+                                return generalFiles.length > 0 ? (
+                                  <div style={{ marginBottom: '16px' }}>
+                                    <h5 style={{ margin: '0 0 8px', fontSize: '0.875rem' }}>Project Files</h5>
+                                    <div className="phase-files">
+                                      {generalFiles.map(f => (
+                                        <div key={f.id} className="phase-file-item">
+                                          <FileText size={14} />
+                                          <span>{f.originalName}</span>
+                                          <span className="file-size">{formatFileSize(f.fileSize)}</span>
+                                          <button type="button" className="kanban-action-btn" onClick={() => setPreviewFile(f)} title="Preview"><Eye size={13} /></button>
+                                        </div>
+                                      ))}
                                     </div>
+                                  </div>
+                                ) : null
+                              })()}
 
-                                    {isEditing ? (
-                                      <div className="phase-edit">
-                                        <textarea
-                                          className="phase-description-input"
-                                          rows="2"
-                                          placeholder="Add description or notes for this phase..."
-                                          value={phaseDescription}
-                                          onChange={(e) => setPhaseDescription(e.target.value)}
-                                        />
-                                        <div className="phase-edit-actions">
-                                          <button
-                                            type="button"
-                                            className="save-btn"
-                                            onClick={() => savePhaseDescription(project.id, phase.phaseNumber)}
-                                          >
-                                            <Save size={14} />
-                                            Save
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="cancel-btn"
-                                            onClick={cancelEditing}
-                                          >
-                                            <X size={14} />
-                                            Cancel
-                                          </button>
+                              {/* Phases section */}
+                              <div className="phases-section">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                                  <h5 className="phases-title" style={{ margin: 0 }}>Project Phases</h5>
+                                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{phases.filter(p => p.completed).length}/{phases.length} phases complete — {Math.round((phases.filter(p => p.completed).length / Math.max(phases.length, 1)) * 100)}%</span>
+                                </div>
+
+                                {/* Progress bar */}
+                                <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
+                                  {phases.map(phase => (
+                                    <div key={`bar-${phase.phaseNumber}`} style={{ flex: 1, height: '8px', borderRadius: '4px', backgroundColor: phase.completed ? 'var(--accent, #4F46E5)' : 'var(--border-primary, #e5e7eb)' }} />
+                                  ))}
+                                </div>
+
+                                {/* Custom phase creation */}
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+                                  <input type="text" className="form-input" placeholder="New phase name…" value={newPhaseName} onChange={e => setNewPhaseName(e.target.value)} style={{ flex: 1 }} />
+                                  <Button variant="outline" size="sm" icon={<Plus size={14} />} onClick={() => handleCreatePhase(project.id)} disabled={!newPhaseName.trim()}>Add Phase</Button>
+                                </div>
+
+                                <div className="phases-list">
+                                  {phases.map(phase => {
+                                    const isEditing = editingPhase === `${project.id}-${phase.phaseNumber}`
+                                    const phaseFiles = projectFiles.filter(f => f.phaseId === phase.id)
+
+                                    return (
+                                      <div key={phase.phaseNumber} className={`phase-item ${phase.completed ? 'completed' : ''}`}>
+                                        <div className="phase-header">
+                                          <label className="phase-checkbox">
+                                            <input type="checkbox" checked={phase.completed} onChange={() => togglePhase(project.id, phase.phaseNumber)} />
+                                            {renamingPhase === `${project.id}-${phase.phaseNumber}` ? (
+                                              <span style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                                <input type="text" className="form-input" style={{ padding: '2px 6px', fontSize: '0.8125rem', width: '150px' }} value={renameValue} onChange={e => setRenameValue(e.target.value)} onClick={e => e.stopPropagation()} />
+                                                <button type="button" className="kanban-action-btn done" onClick={() => handleRenamePhase(project.id, phase.id)}><Save size={12} /></button>
+                                                <button type="button" className="kanban-action-btn" onClick={() => setRenamingPhase(null)}><X size={12} /></button>
+                                              </span>
+                                            ) : (
+                                              <span className="phase-name">{phase.phaseName}</span>
+                                            )}
+                                          </label>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            {phase.completed && phase.completedAt && (
+                                              <small className="phase-date">Completed: {formatDateIST(phase.completedAt)}</small>
+                                            )}
+                                            {phase.deadline && !phase.completed && (
+                                              <small style={{ color: new Date(phase.deadline) < new Date() ? 'var(--error, #ef4444)' : 'var(--text-muted)', fontWeight: new Date(phase.deadline) < new Date() ? 600 : 400 }}>
+                                                {new Date(phase.deadline) < new Date() ? (
+                                                  <><AlertTriangle size={12} style={{ verticalAlign: 'middle', marginRight: '2px' }} /> Overdue</>
+                                                ) : (
+                                                  <><Clock size={12} style={{ verticalAlign: 'middle', marginRight: '2px' }} /> Due: {formatDateIST(phase.deadline)}</>
+                                                )}
+                                              </small>
+                                            )}
+                                            <button type="button" className="kanban-action-btn" title="Rename" onClick={() => { setRenamingPhase(`${project.id}-${phase.phaseNumber}`); setRenameValue(phase.phaseName) }}><Edit size={12} /></button>
+                                            <button type="button" className="kanban-action-btn undo" title="Delete phase" onClick={() => handleDeletePhase(project.id, phase.id, phase.phaseName)}><Trash2 size={12} /></button>
+                                          </div>
+                                        </div>
+
+                                        {isEditing ? (
+                                          <div className="phase-edit">
+                                            <textarea className="phase-description-input" rows="2" placeholder="Add description or notes for this phase…" value={phaseDescription} onChange={(e) => setPhaseDescription(e.target.value)} />
+                                            <div className="phase-edit-actions">
+                                              <button type="button" className="save-btn" onClick={() => savePhaseDescription(project.id, phase.phaseNumber)}><Save size={14} /> Save</button>
+                                              <button type="button" className="cancel-btn" onClick={cancelEditing}><X size={14} /> Cancel</button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="phase-description">
+                                            {phase.description ? <p>{phase.description}</p> : <p className="no-description">No description added</p>}
+                                            <button type="button" className="edit-phase-btn" onClick={() => startEditingPhase(project.id, phase.phaseNumber)}>
+                                              <Edit size={14} /> {phase.description ? 'Edit' : 'Add'} Description
+                                            </button>
+                                          </div>
+                                        )}
+
+                                        {/* Phase files */}
+                                        {phaseFiles.length > 0 && (
+                                          <div className="phase-files">
+                                            {phaseFiles.map(f => (
+                                              <div key={f.id} className="phase-file-item">
+                                                <FileText size={14} />
+                                                <span>{f.originalName}</span>
+                                                <span className="file-size">{formatFileSize(f.fileSize)}</span>
+                                                <button type="button" className="kanban-action-btn" onClick={() => setPreviewFile(f)} title="Preview"><Eye size={13} /></button>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        {/* Upload file to phase */}
+                                        <div className="phase-file-upload" style={{ marginTop: '6px' }}>
+                                          <input type="file" multiple onChange={e => setPhaseFileInputs(prev => ({ ...prev, [phase.id]: Array.from(e.target.files) }))} style={{ fontSize: '0.75rem' }} disabled={uploadingPhaseFile === phase.id} />
+                                          {phaseFileInputs[phase.id]?.length > 0 && (
+                                            <Button variant="outline" size="sm" style={{ marginTop: '4px' }} icon={<Upload size={12} />} onClick={() => handlePhaseFileUpload(project.id, phase.id)} loading={uploadingPhaseFile === phase.id} disabled={uploadingPhaseFile === phase.id}>
+                                              {uploadingPhaseFile === phase.id ? 'Uploading…' : `Upload ${phaseFileInputs[phase.id].length} file(s)`}
+                                            </Button>
+                                          )}
                                         </div>
                                       </div>
-                                    ) : (
-                                      <div className="phase-description">
-                                        {phase.description ? (
-                                          <p>{phase.description}</p>
-                                        ) : (
-                                          <p className="no-description">No description added</p>
-                                        )}
-                                        <button
-                                          type="button"
-                                          className="edit-phase-btn"
-                                          onClick={() => startEditingPhase(project.id, phase.phaseNumber)}
-                                        >
-                                          <Edit size={14} />
-                                          {phase.description ? 'Edit' : 'Add'} Description
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                )
-                              })}
+                                    )
+                                  })}
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       )
                     })}
                   </div>
                 </div>
               )}
+
+              {/* Doc preview overlay */}
+              {previewFile && <DocPreview file={previewFile} onClose={() => setPreviewFile(null)} />}
             </section>
           )}
 
@@ -1037,7 +1246,7 @@ const StudentDashboard = () => {
                       <div key={phase.phaseNumber} className={`timeline-node ${phase.completed ? 'completed' : 'upcoming'}`}>
                         <span className="dot"></span>
                         <p>{phase.phaseName}</p>
-                        <small>{phase.completed && phase.completedAt ? new Date(phase.completedAt).toLocaleDateString() : 'Pending'}</small>
+                        <small>{phase.completed && phase.completedAt ? formatDateIST(phase.completedAt) : 'Pending'}</small>
                       </div>
                     ))
                   ) : (
@@ -1080,7 +1289,7 @@ const StudentDashboard = () => {
                         <div className="entry-header">
                           <strong>{entry.reviewerName || 'Reviewer'}</strong>
                           <span>{entry.reviewerRole || 'Teacher'}</span>
-                          <small>{new Date(entry.createdAt).toLocaleDateString()}</small>
+                          <small>{formatDateIST(entry.createdAt)}</small>
                         </div>
                         <div className="rating-display">
                           {[...Array(5)].map((_, i) => (
@@ -1103,77 +1312,106 @@ const StudentDashboard = () => {
               <div className="section-header">
                 <div>
                   <h3>Analytics</h3>
-                  <p>Quick glance at project health</p>
+                  <p>Comprehensive project insights and statistics</p>
                 </div>
               </div>
-              <div className="analytics-grid">
-                <div className="analytics-tile">
-                  <div className="analytics-icon"><Folder size={18} /></div>
-                  <div>
-                    <p>Total Projects</p>
-                    <strong>{myProjects.length}</strong>
-                    <small>uploaded</small>
-                  </div>
-                </div>
-                <div className="analytics-tile">
-                  <div className="analytics-icon"><CheckSquare size={18} /></div>
-                  <div>
-                    <p>Approved</p>
-                    <strong>{myProjects.filter(p => p.status === 'approved').length}</strong>
-                    <small>projects</small>
-                  </div>
-                </div>
-                <div className="analytics-tile">
-                  <div className="analytics-icon"><BarChart3 size={18} /></div>
-                  <div>
-                    <p>Under Review</p>
-                    <strong>{myProjects.filter(p => p.status === 'under_review').length}</strong>
-                    <small>projects</small>
-                  </div>
-                </div>
-                <div className="analytics-tile">
-                  <div className="analytics-icon"><MessageSquare size={18} /></div>
-                  <div>
-                    <p>Pending</p>
-                    <strong>{myProjects.filter(p => p.status === 'pending').length}</strong>
-                    <small>projects</small>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
 
-          {activeSection === 'skills' && (
-            <section className="card skills-card" id="skills">
-              <div className="section-header">
-                <div>
-                  <h3>Skill Development Resources</h3>
-                  <p>Best YouTube channels for technical skill enhancement</p>
-                </div>
-              </div>
-              <div className="skills-grid">
-                {skillResources.map(resource => (
-                  <div key={resource.id} className="skill-card">
-                    <div className="skill-header">
-                      <BookOpen size={20} className="skill-icon" />
-                      <h4>{resource.skill}</h4>
+              {analyticsLoading ? (
+                <p style={{ color: 'var(--text-muted)', padding: '20px 0' }}>Loading analytics…</p>
+              ) : (
+                <>
+                  {/* Summary tiles */}
+                  <div className="analytics-grid">
+                    <div className="analytics-tile">
+                      <div className="analytics-icon"><Folder size={18} /></div>
+                      <div>
+                        <p>Total Projects</p>
+                        <strong>{analyticsData?.totalProjects ?? myProjects.length}</strong>
+                      </div>
                     </div>
-                    <p className="skill-description">{resource.description}</p>
-                    <div className="skill-footer">
-                      <span className="skill-channel">{resource.channel}</span>
-                      <a
-                        href={resource.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="skill-link"
-                      >
-                        Visit Channel
-                        <ExternalLink size={14} />
-                      </a>
+                    <div className="analytics-tile">
+                      <div className="analytics-icon"><CheckSquare size={18} /></div>
+                      <div>
+                        <p>Approved</p>
+                        <strong>{myProjects.filter(p => p.status === 'approved').length}</strong>
+                      </div>
+                    </div>
+                    <div className="analytics-tile">
+                      <div className="analytics-icon"><Star size={18} /></div>
+                      <div>
+                        <p>Total Stars</p>
+                        <strong>{analyticsData?.totalStars ?? 0}</strong>
+                      </div>
+                    </div>
+                    <div className="analytics-tile">
+                      <div className="analytics-icon"><FileText size={18} /></div>
+                      <div>
+                        <p>Files Uploaded</p>
+                        <strong>{analyticsData?.totalFiles ?? 0}</strong>
+                      </div>
+                    </div>
+                    <div className="analytics-tile">
+                      <div className="analytics-icon"><CheckCircle size={18} /></div>
+                      <div>
+                        <p>Phase Completion</p>
+                        <strong>{analyticsData?.phaseCompletionRate ?? 0}%</strong>
+                      </div>
+                    </div>
+                    <div className="analytics-tile">
+                      <div className="analytics-icon"><MessageSquare size={18} /></div>
+                      <div>
+                        <p>Feedback Received</p>
+                        <strong>{analyticsData?.totalFeedback ?? 0}</strong>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  {/* Charts row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '24px' }}>
+                    {/* Status distribution pie chart */}
+                    {analyticsData?.statusDistribution?.length > 0 && (
+                      <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                        <h4 style={{ marginBottom: '12px', fontSize: '0.9375rem' }}>Project Status Distribution</h4>
+                        <ResponsiveContainer width="100%" height={220}>
+                          <PieChart>
+                            <Pie
+                              data={analyticsData.statusDistribution}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={80}
+                              paddingAngle={4}
+                              dataKey="value"
+                              label={({ name, value }) => `${name}: ${value}`}
+                            >
+                              {analyticsData.statusDistribution.map((_, idx) => (
+                                <Cell key={idx} fill={['#4F46E5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][idx % 5]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {/* Domain distribution bar chart */}
+                    {analyticsData?.domainDistribution?.length > 0 && (
+                      <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                        <h4 style={{ marginBottom: '12px', fontSize: '0.9375rem' }}>Domain Distribution</h4>
+                        <ResponsiveContainer width="100%" height={220}>
+                          <BarChart data={analyticsData.domainDistribution} layout="vertical" margin={{ left: 60 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+                            <XAxis type="number" allowDecimals={false} />
+                            <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
+                            <Tooltip />
+                            <Bar dataKey="value" fill="#4F46E5" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </section>
           )}
 

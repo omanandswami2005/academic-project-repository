@@ -103,6 +103,7 @@ export const userAPI = {
     getProfile: () => api.get('/users/me'),
     updateProfile: (data) => api.patch('/users/me', data),
     getUserById: (id) => api.get(`/users/${id}`),
+    getTeachers: () => api.get('/users/teachers'),
 };
 
 // ─── Project API ───
@@ -133,6 +134,14 @@ export const projectAPI = {
     setDeadlines: (id, deadlines) => api.patch(`/projects/${id}/deadlines`, { deadlines }),
     // FR15: Overdue
     getOverdue: (params) => api.get('/projects/overdue', { params }),
+    // Phase CRUD
+    createPhase: (id, phaseName) => api.post(`/projects/${id}/phases/custom`, { phaseName }),
+    renamePhase: (id, phaseId, phaseName) => api.patch(`/projects/${id}/phases/${phaseId}/rename`, { phaseName }),
+    deletePhase: (id, phaseId) => api.delete(`/projects/${id}/phases/${phaseId}`),
+    uploadPhaseFile: (id, phaseId, formData) =>
+        api.post(`/projects/${id}/phases/${phaseId}/files`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        }),
 };
 
 // ─── Student API ───
@@ -160,6 +169,9 @@ export const analyticsAPI = {
     getSkillRadar: (userId) => api.get(`/analytics/skills/${userId}`),
     getDepartmentStats: (branch) => api.get(`/analytics/department/${branch}`),
     getTopStudents: (params) => api.get('/analytics/top-students', { params }),
+    getStatusDistribution: (params) => api.get('/analytics/status-distribution', { params }),
+    getMonthlyTrend: (params) => api.get('/analytics/monthly-trend', { params }),
+    getStudentSummary: (userId) => api.get(`/analytics/student-summary/${userId}`),
 };
 
 // ─── File API ───
@@ -169,6 +181,7 @@ export const fileAPI = {
             headers: { 'Content-Type': 'multipart/form-data' },
         }),
     getUrl: (key) => api.get(`/files/${key}`),
+    getUrlById: (fileId) => api.get(`/files/by-id/${fileId}`),
     delete: (key) => api.delete(`/files/${key}`),
 };
 
@@ -181,6 +194,13 @@ export const portfolioAPI = {
 export const reportAPI = {
     department: (branch) => api.get(`/reports/department/${branch}`),
     student: (id) => api.get(`/reports/student/${id}`),
+};
+
+// ─── Category API ───
+export const categoryAPI = {
+    getAll: (params) => api.get('/categories', { params }),
+    create: (data) => api.post('/categories', data),
+    delete: (id) => api.delete(`/categories/${id}`),
 };
 
 export default api;

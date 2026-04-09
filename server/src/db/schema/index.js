@@ -34,6 +34,25 @@ const usersRelations = relations(users, ({ many }) => ({
     refreshTokens: many(refreshTokens),
 }));
 
+// ─── Project Categories (teacher-created) ───
+const projectCategories = pgTable('project_categories', {
+    id: serial('id').primaryKey(),
+    name: varchar('name', { length: 100 }).notNull(),
+    branch: varchar('branch', { length: 50 }),
+    createdBy: integer('created_by').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+    index('categories_branch_idx').on(table.branch),
+    index('categories_created_by_idx').on(table.createdBy),
+]);
+
+const projectCategoriesRelations = relations(projectCategories, ({ one }) => ({
+    creator: one(users, {
+        fields: [projectCategories.createdBy],
+        references: [users.id],
+    }),
+}));
+
 // ─── Projects ───
 const projects = pgTable('projects', {
     id: serial('id').primaryKey(),
@@ -41,6 +60,8 @@ const projects = pgTable('projects', {
     title: varchar('title', { length: 255 }).notNull(),
     description: text('description').notNull(),
     domainTags: jsonb('domain_tags').default([]),
+    categoryId: integer('category_id').references(() => projectCategories.id),
+    semester: integer('semester'),
     studentId: integer('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     mentorId: integer('mentor_id').references(() => users.id),
     mentorStatus: varchar('mentor_status', { length: 20 }).default('none'), // none, requested, accepted, reassigned
@@ -55,6 +76,7 @@ const projects = pgTable('projects', {
     index('projects_student_idx').on(table.studentId),
     index('projects_status_idx').on(table.status),
     index('projects_visibility_idx').on(table.visibility),
+    index('projects_category_idx').on(table.categoryId),
 ]);
 
 const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -67,6 +89,10 @@ const projectsRelations = relations(projects, ({ one, many }) => ({
         fields: [projects.mentorId],
         references: [users.id],
         relationName: 'mentorProjects',
+    }),
+    category: one(projectCategories, {
+        fields: [projects.categoryId],
+        references: [projectCategories.id],
     }),
     phases: many(projectPhases),
     files: many(projectFiles),
@@ -105,6 +131,8 @@ const projectPhasesRelations = relations(projectPhases, ({ one }) => ({
 const projectFiles = pgTable('project_files', {
     id: serial('id').primaryKey(),
     projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+    phaseId: integer('phase_id'),
+    uploadedBy: integer('uploaded_by').references(() => users.id),
     filename: varchar('filename', { length: 255 }).notNull(),
     originalName: varchar('original_name', { length: 255 }).notNull(),
     r2Key: text('r2_key').notNull(),
@@ -113,6 +141,7 @@ const projectFiles = pgTable('project_files', {
     uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
 }, (table) => [
     index('files_project_idx').on(table.projectId),
+    index('files_uploaded_by_idx').on(table.uploadedBy),
 ]);
 
 const projectFilesRelations = relations(projectFiles, ({ one }) => ({
@@ -214,6 +243,8 @@ const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
 module.exports = {
     users,
     usersRelations,
+    projectCategories,
+    projectCategoriesRelations,
     projects,
     projectsRelations,
     projectPhases,

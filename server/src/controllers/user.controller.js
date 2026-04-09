@@ -141,14 +141,14 @@ const searchUsers = async (req, res) => {
             role: users.role,
             branch: users.branch,
         })
-        .from(users)
-        .where(
-            or(
-                ilike(users.username, searchTerm),
-                ilike(users.email, searchTerm)
+            .from(users)
+            .where(
+                or(
+                    ilike(users.username, searchTerm),
+                    ilike(users.email, searchTerm)
+                )
             )
-        )
-        .limit(20);
+            .limit(20);
 
         res.status(200).json({ users: result });
     } catch (error) {
@@ -157,4 +157,27 @@ const searchUsers = async (req, res) => {
     }
 };
 
-module.exports = { getProfile, updateProfile, getUserById, searchUsers };
+/**
+ * GET /api/users/teachers
+ * Returns list of teachers (accessible to authenticated students)
+ */
+const getTeachers = async (req, res) => {
+    try {
+        const db = getDB();
+        const result = await db.select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+            branch: users.branch,
+        })
+            .from(users)
+            .where(eq(users.role, 'teacher'));
+
+        res.status(200).json({ teachers: result });
+    } catch (error) {
+        logger.error('USER', 'Get teachers failed', error);
+        res.status(500).json({ message: 'Internal Server Error.' });
+    }
+};
+
+module.exports = { getProfile, updateProfile, getUserById, searchUsers, getTeachers };

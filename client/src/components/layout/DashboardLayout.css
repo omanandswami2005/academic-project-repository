@@ -40,16 +40,28 @@
 }
 
 .global-search {
+  display: none;
+}
+
+/* ── Role Badge ── */
+.nav-role-badge {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  padding: 0.375rem 0.75rem;
-  width: 240px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+}
+
+.nav-role-label {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.nav-role-branch {
   color: var(--text-muted);
-  transition: border-color var(--transition-fast);
 }
 
 .global-search:focus-within {

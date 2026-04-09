@@ -125,4 +125,41 @@ const deleteFile = async (req, res) => {
     }
 };
 
-module.exports = { uploadFile, getFileUrl, deleteFile };
+/**
+ * GET /api/files/by-id/:fileId
+ */
+const getFileUrlById = async (req, res) => {
+    try {
+        const db = getDB();
+        const fileId = parseInt(req.params.fileId);
+        if (isNaN(fileId)) {
+            return res.status(400).json({ message: 'Invalid file ID.' });
+        }
+
+        const [file] = await db.select()
+            .from(projectFiles)
+            .where(eq(projectFiles.id, fileId))
+            .limit(1);
+
+        if (!file) {
+            return res.status(404).json({ message: 'File not found.' });
+        }
+
+        const url = await getDownloadUrl(file.r2Key);
+
+        res.status(200).json({
+            message: 'Download URL generated',
+            url,
+            file: {
+                originalName: file.originalName,
+                fileSize: file.fileSize,
+                fileType: file.fileType,
+            },
+        });
+    } catch (error) {
+        logger.error('FILE', `Get download URL failed for fileId=${req.params.fileId}`, error);
+        res.status(500).json({ message: error.message || 'Internal Server Error.' });
+    }
+};
+
+module.exports = { uploadFile, getFileUrl, getFileUrlById, deleteFile };

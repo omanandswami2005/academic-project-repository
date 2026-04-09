@@ -1,6 +1,6 @@
 const { eq, and, desc, ilike, or, sql, count, lt, isNull, inArray } = require('drizzle-orm');
 const { getDB } = require('../config/db');
-const { projects, projectPhases, projectFiles, projectMembers, users, notifications } = require('../db/schema');
+const { projects, projectPhases, projectFiles, projectMembers, users, notifications, projectCategories } = require('../db/schema');
 const { uploadToR2, deleteFromR2 } = require('../middleware/upload');
 const logger = require('../utils/logger');
 
@@ -14,15 +14,21 @@ const PHASE_NAMES = [
 ];
 
 /**
- * Generate a unique project ID: BRANCH_YEAR_SEQ
+ * Generate a unique project ID: BRANCH-S{sem}-YYYY-SEQ
+ * e.g. CSBS-S4-2025-001, IT-S8-2025-012
+ * If semester is not provided, falls back to BRANCH-YYYY-SEQ
  */
-async function generateProjectId(db, branch, year) {
-    const prefix = `${(branch || 'GEN').toUpperCase()}_${year || new Date().getFullYear()}`;
+async function generateProjectId(db, branch, semester) {
+    const branchCode = (branch || 'GEN').toUpperCase().replace(/\s+/g, '');
+    const year = new Date().getFullYear();
+    const prefix = semester
+        ? `${branchCode}-S${semester}-${year}`
+        : `${branchCode}-${year}`;
     const existing = await db.select({ id: projects.id })
         .from(projects)
-        .where(ilike(projects.uniqueProjectId, `${prefix}_%`));
+        .where(ilike(projects.uniqueProjectId, `${prefix}-%`));
     const seq = String(existing.length + 1).padStart(3, '0');
-    return `${prefix}_${seq}`;
+    return `${prefix}-${seq}`;
 }
 
 /**
@@ -32,7 +38,7 @@ const createProject = async (req, res) => {
     try {
         const db = getDB();
         const userId = req.user.id;
-        const { title, description, domainTags, visibility, groupMembers } = req.body;
+        const { title, description, domainTags, visibility, groupMembers, categoryId, semester } = req.body;
 
         // Get user info for branch/year
         const [student] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
@@ -40,13 +46,22 @@ const createProject = async (req, res) => {
             return res.status(404).json({ message: 'User not found.' });
         }
 
-        const uniqueProjectId = await generateProjectId(db, student.branch, student.year);
+        // Validate category exists if provided
+        if (categoryId) {
+            const [cat] = await db.select().from(projectCategories).where(eq(projectCategories.id, parseInt(categoryId))).limit(1);
+            if (!cat) return res.status(400).json({ message: 'Invalid project category.' });
+        }
+
+        const sem = semester ? parseInt(semester) : null;
+        const uniqueProjectId = await generateProjectId(db, student.branch, sem);
 
         const [newProject] = await db.insert(projects).values({
             uniqueProjectId,
             title,
             description,
             domainTags: domainTags || [],
+            categoryId: categoryId ? parseInt(categoryId) : null,
+            semester: sem,
             studentId: userId,
             visibility: visibility || 'private',
             status: 'pending',
@@ -116,7 +131,7 @@ const createProject = async (req, res) => {
 const getAllProjects = async (req, res) => {
     try {
         const db = getDB();
-        const { page, limit, status, branch, domain, visibility, search } = req.query;
+        const { page, limit, status, branch, domain, visibility, search, categoryId } = req.query;
 
         const pageNum = Math.max(1, parseInt(page) || 1);
         const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
@@ -136,13 +151,25 @@ const getAllProjects = async (req, res) => {
                 ilike(projects.description, `%${search}%`)
             ));
         }
+        if (categoryId) {
+            conditions.push(eq(projects.categoryId, parseInt(categoryId)));
+        }
 
-        // If the user is not teacher/admin/expert, only show public or their own
+        // If the user is student, show public, department-visible (same branch), or their own
         if (req.user && req.user.role === 'student') {
-            conditions.push(or(
+            const [student] = await db.select({ branch: users.branch }).from(users).where(eq(users.id, req.user.id)).limit(1);
+            const studentBranch = student?.branch;
+            const visibilityConditions = [
                 eq(projects.visibility, 'public'),
-                eq(projects.studentId, req.user.id)
-            ));
+                eq(projects.studentId, req.user.id),
+            ];
+            if (studentBranch) {
+                // Allow department-visible projects from same branch
+                visibilityConditions.push(
+                    and(eq(projects.visibility, 'department'), sql`EXISTS (SELECT 1 FROM users u WHERE u.id = ${projects.studentId} AND u.branch = ${studentBranch})`)
+                );
+            }
+            conditions.push(or(...visibilityConditions));
         }
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -153,9 +180,13 @@ const getAllProjects = async (req, res) => {
             title: projects.title,
             description: projects.description,
             domainTags: projects.domainTags,
+            categoryId: projects.categoryId,
+            semester: projects.semester,
             status: projects.status,
             visibility: projects.visibility,
             stars: projects.stars,
+            mentorId: projects.mentorId,
+            mentorStatus: projects.mentorStatus,
             createdAt: projects.createdAt,
             updatedAt: projects.updatedAt,
             studentId: projects.studentId,
@@ -254,9 +285,13 @@ const getProjectById = async (req, res) => {
             title: projects.title,
             description: projects.description,
             domainTags: projects.domainTags,
+            categoryId: projects.categoryId,
+            semester: projects.semester,
             status: projects.status,
             visibility: projects.visibility,
             stars: projects.stars,
+            mentorId: projects.mentorId,
+            mentorStatus: projects.mentorStatus,
             createdAt: projects.createdAt,
             updatedAt: projects.updatedAt,
             studentId: projects.studentId,
@@ -430,8 +465,8 @@ const updateProjectPhase = async (req, res) => {
         }
 
         const phaseNumber = parseInt(phase);
-        if (isNaN(phaseNumber) || phaseNumber < 1 || phaseNumber > 6) {
-            return res.status(400).json({ message: 'Invalid phase number. Must be 1-6.' });
+        if (isNaN(phaseNumber) || phaseNumber < 1) {
+            return res.status(400).json({ message: 'Invalid phase number.' });
         }
 
         const updateData = {};
@@ -591,6 +626,168 @@ const searchProjects = async (req, res) => {
     }
 };
 
+// ═══════════════════════════════════════════
+// Custom Phase CRUD + Phase File Upload
+// ═══════════════════════════════════════════
+
+async function createPhase(req, res) {
+    try {
+        const db = getDB();
+        const projectId = parseInt(req.params.id);
+        const { phaseName } = req.body;
+
+        if (!phaseName || !phaseName.trim()) {
+            return res.status(400).json({ message: 'Phase name is required.' });
+        }
+
+        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+        if (!project) return res.status(404).json({ message: 'Project not found.' });
+        if (project.studentId !== req.user.id) {
+            return res.status(403).json({ message: 'Only the project owner can add phases.' });
+        }
+
+        const existingPhases = await db.select({ phaseNumber: projectPhases.phaseNumber })
+            .from(projectPhases)
+            .where(eq(projectPhases.projectId, projectId));
+        const maxPhase = existingPhases.reduce((max, p) => Math.max(max, p.phaseNumber), 0);
+
+        const [newPhase] = await db.insert(projectPhases).values({
+            projectId,
+            phaseNumber: maxPhase + 1,
+            phaseName: phaseName.trim(),
+        }).returning();
+
+        logger.success('PROJECT', `Custom phase created for project id=${projectId}: "${phaseName}"`);
+        res.status(201).json({ message: 'Phase created.', phase: newPhase });
+    } catch (error) {
+        logger.error('PROJECT', 'Create phase failed', error);
+        res.status(500).json({ message: 'Internal Server Error.' });
+    }
+}
+
+async function renamePhase(req, res) {
+    try {
+        const db = getDB();
+        const projectId = parseInt(req.params.id);
+        const phaseId = parseInt(req.params.phaseId);
+        const { phaseName } = req.body;
+
+        if (!phaseName || !phaseName.trim()) {
+            return res.status(400).json({ message: 'Phase name is required.' });
+        }
+
+        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+        if (!project) return res.status(404).json({ message: 'Project not found.' });
+        if (project.studentId !== req.user.id) {
+            return res.status(403).json({ message: 'Only the project owner can rename phases.' });
+        }
+
+        const [updated] = await db.update(projectPhases)
+            .set({ phaseName: phaseName.trim() })
+            .where(and(eq(projectPhases.id, phaseId), eq(projectPhases.projectId, projectId)))
+            .returning();
+
+        if (!updated) return res.status(404).json({ message: 'Phase not found.' });
+
+        logger.success('PROJECT', `Phase id=${phaseId} renamed to "${phaseName}"`);
+        res.status(200).json({ message: 'Phase renamed.', phase: updated });
+    } catch (error) {
+        logger.error('PROJECT', 'Rename phase failed', error);
+        res.status(500).json({ message: 'Internal Server Error.' });
+    }
+}
+
+async function deletePhase(req, res) {
+    try {
+        const db = getDB();
+        const projectId = parseInt(req.params.id);
+        const phaseId = parseInt(req.params.phaseId);
+
+        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+        if (!project) return res.status(404).json({ message: 'Project not found.' });
+        if (project.studentId !== req.user.id) {
+            return res.status(403).json({ message: 'Only the project owner can delete phases.' });
+        }
+
+        const phaseFiles = await db.select().from(projectFiles)
+            .where(and(eq(projectFiles.projectId, projectId), eq(projectFiles.phaseId, phaseId)));
+        for (const f of phaseFiles) {
+            try { await deleteFromR2(f.r2Key); } catch { /* ignore */ }
+        }
+        if (phaseFiles.length > 0) {
+            await db.delete(projectFiles)
+                .where(and(eq(projectFiles.projectId, projectId), eq(projectFiles.phaseId, phaseId)));
+        }
+
+        const [deleted] = await db.delete(projectPhases)
+            .where(and(eq(projectPhases.id, phaseId), eq(projectPhases.projectId, projectId)))
+            .returning();
+
+        if (!deleted) return res.status(404).json({ message: 'Phase not found.' });
+
+        const remaining = await db.select().from(projectPhases).where(eq(projectPhases.projectId, projectId));
+        const completedCount = remaining.filter(p => p.completed).length;
+        await db.update(projects).set({ stars: completedCount, updatedAt: new Date() }).where(eq(projects.id, projectId));
+
+        logger.success('PROJECT', `Phase id=${phaseId} deleted from project id=${projectId}`);
+        res.status(200).json({ message: 'Phase deleted.', deletedFilesCount: phaseFiles.length });
+    } catch (error) {
+        logger.error('PROJECT', 'Delete phase failed', error);
+        res.status(500).json({ message: 'Internal Server Error.' });
+    }
+}
+
+async function uploadPhaseFile(req, res) {
+    try {
+        const db = getDB();
+        const projectId = parseInt(req.params.id);
+        const phaseId = parseInt(req.params.phaseId);
+
+        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+        if (!project) return res.status(404).json({ message: 'Project not found.' });
+
+        // Allow project owner OR mentor to upload
+        const isOwner = project.studentId === req.user.id;
+        const isMentor = project.mentorId === req.user.id && project.mentorStatus === 'accepted';
+        const isTeacher = req.user.role === 'teacher' || req.user.role === 'admin';
+        if (!isOwner && !(isMentor && isTeacher)) {
+            return res.status(403).json({ message: 'Only the project owner or assigned mentor can upload files.' });
+        }
+
+        const [phase] = await db.select().from(projectPhases)
+            .where(and(eq(projectPhases.id, phaseId), eq(projectPhases.projectId, projectId))).limit(1);
+        if (!phase) return res.status(404).json({ message: 'Phase not found.' });
+
+        const uploadedFiles = [];
+        if (req.parsedFiles && req.parsedFiles.length > 0) {
+            for (const file of req.parsedFiles) {
+                const result = await uploadToR2(file.buffer, file.originalName, file.mimeType);
+                const [fileRecord] = await db.insert(projectFiles).values({
+                    projectId,
+                    phaseId,
+                    uploadedBy: req.user.id,
+                    filename: result.key.split('/').pop(),
+                    originalName: file.originalName,
+                    r2Key: result.key,
+                    fileSize: file.size,
+                    fileType: file.mimeType,
+                }).returning();
+                uploadedFiles.push(fileRecord);
+            }
+        }
+
+        if (uploadedFiles.length === 0) {
+            return res.status(400).json({ message: 'No files provided.' });
+        }
+
+        logger.success('PROJECT', `${uploadedFiles.length} file(s) uploaded to phase id=${phaseId} by user=${req.user.id}`);
+        res.status(201).json({ message: 'Files uploaded.', files: uploadedFiles });
+    } catch (error) {
+        logger.error('PROJECT', 'Upload phase file failed', error);
+        res.status(500).json({ message: 'Internal Server Error.' });
+    }
+}
+
 module.exports = {
     createProject,
     getAllProjects,
@@ -613,6 +810,10 @@ module.exports = {
     getPortfolio,
     getDepartmentReport,
     getStudentReport,
+    createPhase,
+    renamePhase,
+    deletePhase,
+    uploadPhaseFile,
 };
 
 // ═══════════════════════════════════════════
@@ -638,7 +839,7 @@ async function forkProject(req, res) {
 
         // Get user info for branch/year
         const [student] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-        const uniqueProjectId = await generateProjectId(db, student.branch, student.year);
+        const uniqueProjectId = await generateProjectId(db, student.branch, null);
 
         const [forked] = await db.insert(projects).values({
             uniqueProjectId,
@@ -937,7 +1138,7 @@ async function setPhaseDeadlines(req, res) {
         if (!project) return res.status(404).json({ message: 'Project not found.' });
 
         for (const { phaseNumber, deadline } of deadlines) {
-            if (phaseNumber < 1 || phaseNumber > 6) continue;
+            if (phaseNumber < 1) continue;
             await db.update(projectPhases)
                 .set({ deadline: new Date(deadline) })
                 .where(and(

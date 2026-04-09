@@ -6,6 +6,10 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 
+if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
+    logger.warn('AUTH', 'WARNING: JWT secrets not set in environment variables. Using insecure fallback secrets.');
+}
+
 function generateAccessToken(payload) {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }

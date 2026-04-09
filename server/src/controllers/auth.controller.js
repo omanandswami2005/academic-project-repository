@@ -33,6 +33,10 @@ const signup = async (req, res) => {
             }
         }
 
+        if (role === 'teacher' && !branch) {
+            return res.status(400).json({ message: 'Department/branch is required for teacher registration.' });
+        }
+
         const passwordHash = await bcrypt.hash(password, 12);
 
         const [newUser] = await db.insert(users).values({

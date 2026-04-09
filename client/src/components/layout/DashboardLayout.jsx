@@ -7,7 +7,6 @@ import {
   LayoutGrid,
   LogOut,
   Moon,
-  Search,
   Sun,
   User,
   X
@@ -15,6 +14,7 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { notificationAPI } from '../../services/api'
+import { formatDateIST } from '../../utils/date'
 import './DashboardLayout.css'
 
 const DashboardLayout = ({ onLogout, children }) => {
@@ -24,7 +24,6 @@ const DashboardLayout = ({ onLogout, children }) => {
   const { isDark, toggleTheme } = useTheme()
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
-  const [searchTerm, setSearchTerm] = useState('')
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -68,11 +67,6 @@ const DashboardLayout = ({ onLogout, children }) => {
     setShowNotifications(false)
   }
 
-  const handleSearch = (e) => {
-    e.preventDefault()
-    if (!searchTerm.trim()) return
-  }
-
   const handleLogout = async () => {
     if (onLogout) {
       onLogout()
@@ -89,15 +83,10 @@ const DashboardLayout = ({ onLogout, children }) => {
       <header className="global-nav">
         <div className="global-nav-left">
           <button className="logo" type="button" onClick={() => navigate('/home')}>APRS</button>
-          <form className="global-search" onSubmit={handleSearch}>
-            <Search size={15} />
-            <input
-              type="search"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </form>
+          <div className="nav-role-badge">
+            <span className="nav-role-label">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}</span>
+            {user?.branch && <span className="nav-role-branch">{user.branch}</span>}
+          </div>
         </div>
         <div className="global-nav-right">
           <nav className="nav-links">
@@ -148,7 +137,7 @@ const DashboardLayout = ({ onLogout, children }) => {
                   notifications.map(item => (
                     <div key={item.id} className={`notification-item ${item.read ? '' : 'unread'}`}>
                       <p>{item.message}</p>
-                      <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                      <span>{formatDateIST(item.createdAt)}</span>
                     </div>
                   ))
                 )}

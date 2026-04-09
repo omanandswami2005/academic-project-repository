@@ -21,16 +21,24 @@ import {
   UploadCloud,
   X,
   Calendar,
-  BarChart3
+  BarChart3,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  FolderOpen,
+  Tag
 } from 'lucide-react'
 import './TeacherDashboard.css'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import AppSidebar from '../../components/layout/AppSidebar'
 import Button from '../../components/ui/Button'
+import DocPreview from '../../components/ui/DocPreview'
 import { useAuth } from '../../context/AuthContext'
-import { studentAPI, projectAPI, feedbackAPI, analyticsAPI, reportAPI } from '../../services/api'
+import { studentAPI, projectAPI, feedbackAPI, analyticsAPI, reportAPI, categoryAPI } from '../../services/api'
+import { useDebounce } from '../../utils/useDebounce'
 import toast from 'react-hot-toast'
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts'
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, Legend } from 'recharts'
+import { formatDateIST } from '../../utils/date'
 
 const rubricFields = [
   { key: 'technical', label: 'Technical Depth' },
@@ -70,6 +78,7 @@ const TeacherDashboard = () => {
   )
   const [activeSection, setActiveSection] = useState('overview')
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [commentDraft, setCommentDraft] = useState('')
@@ -100,6 +109,31 @@ const TeacherDashboard = () => {
 
   // FR9: Mentor requests (projects requesting this teacher)
   const [mentorRequests, setMentorRequests] = useState([])
+
+  // Category management
+  const [categories, setCategories] = useState([])
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+
+  // Pagination
+  const [projectPage, setProjectPage] = useState(1)
+  const projectsPerPage = 6
+
+  // Phase-wise doc view
+  const [expandedProjectDocs, setExpandedProjectDocs] = useState(null)
+  const [projectPhaseData, setProjectPhaseData] = useState(null)
+  const [loadingPhaseData, setLoadingPhaseData] = useState(false)
+  const [previewFile, setPreviewFile] = useState(null)
+
+  // Analytics charts data
+  const [statusDistribution, setStatusDistribution] = useState([])
+  const [monthlyTrend, setMonthlyTrend] = useState([])
+
+  // Mentor doc upload
+  const [mentorUploadProject, setMentorUploadProject] = useState(null)
+  const [mentorUploadPhase, setMentorUploadPhase] = useState('')
+  const [mentorUploadFiles, setMentorUploadFiles] = useState([])
+  const [uploadingMentorDocs, setUploadingMentorDocs] = useState(false)
 
   // Fetch registered students by branch from API
   useEffect(() => {
@@ -191,6 +225,105 @@ const TeacherDashboard = () => {
     }
     fetchMentorRequests()
   }, [user])
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data } = await categoryAPI.getAll(selectedBranch ? { branch: selectedBranch } : {})
+        setCategories(data.categories || [])
+      } catch { /* ignore */ }
+    }
+    fetchCategories()
+  }, [selectedBranch])
+
+  // Fetch analytics charts data
+  useEffect(() => {
+    if (!selectedBranch) return
+    const fetchCharts = async () => {
+      try {
+        const [statusRes, trendRes] = await Promise.all([
+          analyticsAPI.getStatusDistribution({ branch: selectedBranch }),
+          analyticsAPI.getMonthlyTrend({ branch: selectedBranch }),
+        ])
+        setStatusDistribution(statusRes.data?.distribution || [])
+        setMonthlyTrend(trendRes.data?.trend || [])
+      } catch { /* non-critical */ }
+    }
+    fetchCharts()
+  }, [selectedBranch])
+
+  // Create category
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return
+    try {
+      await categoryAPI.create({ name: newCategoryName.trim(), branch: selectedBranch || null })
+      toast.success('Category created!')
+      setNewCategoryName('')
+      const { data } = await categoryAPI.getAll(selectedBranch ? { branch: selectedBranch } : {})
+      setCategories(data.categories || [])
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to create category')
+    }
+  }
+
+  // Delete category
+  const handleDeleteCategory = async (categoryId) => {
+    if (!window.confirm('Delete this category?')) return
+    try {
+      await categoryAPI.delete(categoryId)
+      toast.success('Category deleted')
+      setCategories(prev => prev.filter(c => c.id !== categoryId))
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete category')
+    }
+  }
+
+  // Fetch phase-wise docs for a project
+  const handleViewProjectDocs = async (projectId) => {
+    if (expandedProjectDocs === projectId) {
+      setExpandedProjectDocs(null)
+      setProjectPhaseData(null)
+      return
+    }
+    setExpandedProjectDocs(projectId)
+    setLoadingPhaseData(true)
+    try {
+      const { data } = await projectAPI.getById(projectId)
+      setProjectPhaseData(data.project)
+    } catch {
+      toast.error('Failed to load project details')
+    } finally {
+      setLoadingPhaseData(false)
+    }
+  }
+
+  // Mentor doc upload handler
+  const handleMentorDocUpload = async () => {
+    if (!mentorUploadProject || !mentorUploadPhase || mentorUploadFiles.length === 0) {
+      toast.error('Select a phase and files to upload')
+      return
+    }
+    setUploadingMentorDocs(true)
+    try {
+      const formData = new FormData()
+      mentorUploadFiles.forEach(f => formData.append('files', f))
+      await projectAPI.uploadPhaseFile(mentorUploadProject, mentorUploadPhase, formData)
+      toast.success('Documents uploaded for student reference!')
+      setMentorUploadFiles([])
+      setMentorUploadPhase('')
+      setMentorUploadProject(null)
+      // Refresh phase data if viewing
+      if (expandedProjectDocs) {
+        const { data } = await projectAPI.getById(expandedProjectDocs)
+        setProjectPhaseData(data.project)
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to upload documents')
+    } finally {
+      setUploadingMentorDocs(false)
+    }
+  }
 
   // FR13: Set deadlines for a project
   const handleSetDeadlines = async (projectId) => {
@@ -297,21 +430,21 @@ const TeacherDashboard = () => {
         projectTitle: p.title,
         detail: p.description ? p.description.substring(0, 60) + '...' : 'No description',
         due: p.status === 'pending' ? 'Needs review' : 'In review',
-        timeAgo: new Date(p.createdAt).toLocaleDateString(),
+        timeAgo: formatDateIST(p.createdAt),
         priority: p.status === 'pending' ? 'High' : 'Medium',
       }))
   }, [selectedBranch, uploadedProjects])
 
   const suggestionsList = useMemo(() => {
-    if (!searchTerm) return []
-    const term = searchTerm.toLowerCase()
+    if (!debouncedSearchTerm) return []
+    const term = debouncedSearchTerm.toLowerCase()
     return filteredStudents
       .filter(student =>
         (student.prn || student.roll || '').toLowerCase().includes(term) ||
         (student.name || '').toLowerCase().includes(term)
       )
       .slice(0, 5)
-  }, [searchTerm, filteredStudents])
+  }, [debouncedSearchTerm, filteredStudents])
 
   const overviewCards = useMemo(() => {
     const total = filteredStudents.length
@@ -417,6 +550,8 @@ const TeacherDashboard = () => {
           items={[
             { id: 'overview', label: 'Overview', icon: LayoutDashboard },
             { id: 'students', label: 'Student Tracker', icon: FileText },
+            { id: 'uploaded-projects', label: 'Projects', icon: FolderOpen },
+            { id: 'categories', label: 'Categories', icon: Tag },
             { id: 'reviews', label: 'Review Queue', icon: BookOpen, badge: reviewQueue.length },
             { id: 'deadlines', label: 'Deadlines', icon: Calendar },
             { id: 'mentors', label: 'Mentor Requests', icon: Users, badge: mentorRequests.length },
@@ -571,7 +706,7 @@ const TeacherDashboard = () => {
                       <strong style={{ fontSize: '0.875rem' }}>{o.studentName}</strong>
                       <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginLeft: '8px' }}>{o.projectTitle} — {o.phaseName}</span>
                     </div>
-                    <small style={{ color: 'var(--error, #ef4444)' }}>Due: {new Date(o.deadline).toLocaleDateString()}</small>
+                    <small style={{ color: 'var(--error, #ef4444)' }}>Due: {formatDateIST(o.deadline)}</small>
                   </div>
                 ))}
               </div>
@@ -602,26 +737,34 @@ const TeacherDashboard = () => {
                     </Button>
                   ))}
                 </div>
-                {deadlineProject && (
-                  <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '16px', border: '1px solid var(--border-subtle)' }}>
-                    <h4 style={{ marginBottom: '12px' }}>Set Deadlines</h4>
-                    {[1, 2, 3, 4, 5, 6].map(phase => (
-                      <div key={phase} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                        <span style={{ width: '180px', fontSize: '0.875rem' }}>Phase {phase}</span>
-                        <input
-                          type="date"
-                          className="form-input"
-                          style={{ flex: 1, maxWidth: '200px' }}
-                          value={deadlineForms[phase] || ''}
-                          onChange={(e) => setDeadlineForms(prev => ({ ...prev, [phase]: e.target.value }))}
-                        />
-                      </div>
-                    ))}
-                    <Button variant="primary" size="sm" style={{ marginTop: '12px' }} icon={<Calendar size={14} />} onClick={() => handleSetDeadlines(deadlineProject)}>
-                      Save Deadlines
-                    </Button>
-                  </div>
-                )}
+                {deadlineProject && (() => {
+                  const dp = uploadedProjects.find(p => p.id === deadlineProject)
+                  const phases = projectPhaseData && projectPhaseData.id === deadlineProject ? projectPhaseData.phases || [] : []
+                  const phaseNums = phases.length > 0 ? phases.map(p => p.phaseNumber) : [1, 2, 3, 4, 5, 6]
+                  return (
+                    <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '16px', border: '1px solid var(--border-subtle)' }}>
+                      <h4 style={{ marginBottom: '12px' }}>Set Deadlines — {dp?.title || ''}</h4>
+                      {phaseNums.map(phase => {
+                        const phaseInfo = phases.find(p => p.phaseNumber === phase)
+                        return (
+                          <div key={phase} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                            <span style={{ width: '220px', fontSize: '0.875rem' }}>Phase {phase}{phaseInfo ? `: ${phaseInfo.phaseName}` : ''}</span>
+                            <input
+                              type="date"
+                              className="form-input"
+                              style={{ flex: 1, maxWidth: '200px' }}
+                              value={deadlineForms[phase] || ''}
+                              onChange={(e) => setDeadlineForms(prev => ({ ...prev, [phase]: e.target.value }))}
+                            />
+                          </div>
+                        )
+                      })}
+                      <Button variant="primary" size="sm" style={{ marginTop: '12px' }} icon={<Calendar size={14} />} onClick={() => handleSetDeadlines(deadlineProject)}>
+                        Save Deadlines
+                      </Button>
+                    </div>
+                  )
+                })()}
               </div>
             )}
           </section>
@@ -709,6 +852,40 @@ const TeacherDashboard = () => {
                     </div>
                   </>
                 )}
+
+                {/* Analytics Charts */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginTop: '24px' }}>
+                  {statusDistribution.length > 0 && (
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                      <h4 style={{ marginBottom: '12px', fontSize: '0.9375rem' }}>Project Status Breakdown</h4>
+                      <ResponsiveContainer width="100%" height={220}>
+                        <PieChart>
+                          <Pie data={statusDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                            {statusDistribution.map((_, idx) => (
+                              <Cell key={idx} fill={['#4F46E5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][idx % 5]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {monthlyTrend.length > 0 && (
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                      <h4 style={{ marginBottom: '12px', fontSize: '0.9375rem' }}>Monthly Project Submissions</h4>
+                      <ResponsiveContainer width="100%" height={220}>
+                        <LineChart data={monthlyTrend}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+                          <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="projects" stroke="#4F46E5" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : loadingReport ? (
               <p className="muted">Loading report...</p>
@@ -723,6 +900,12 @@ const TeacherDashboard = () => {
                 <h2>Uploaded Projects</h2>
                 <p>Projects submitted by students</p>
               </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <select value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setProjectPage(1) }} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', fontSize: '0.8125rem' }}>
+                  <option value="">All Categories</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
             </div>
             {loadingProjects ? (
               <div className="loading-message">Loading projects...</div>
@@ -731,42 +914,193 @@ const TeacherDashboard = () => {
                 <UploadCloud size={48} />
                 <p>No projects uploaded yet</p>
               </div>
+            ) : (() => {
+              const filtered = categoryFilter
+                ? uploadedProjects.filter(p => String(p.categoryId) === String(categoryFilter))
+                : uploadedProjects
+              const totalPages = Math.ceil(filtered.length / projectsPerPage)
+              const paginated = filtered.slice((projectPage - 1) * projectsPerPage, projectPage * projectsPerPage)
+              return (
+                <>
+                  <div className="projects-grid">
+                    {paginated.map(project => (
+                      <div key={project.id} className="project-card">
+                        <div className="project-card-header">
+                          <div>
+                            <h3>{project.title}</h3>
+                            <p className="project-student">
+                              <strong>{project.uniqueProjectId}</strong>
+                              {project.categoryId && categories.find(c => c.id === project.categoryId) && (
+                                <span style={{ marginLeft: '8px', padding: '2px 8px', background: 'var(--accent-subtle)', borderRadius: '12px', fontSize: '0.7rem' }}>
+                                  {categories.find(c => c.id === project.categoryId)?.name}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <span className={`status-chip project-status ${project.status}`}>
+                            {project.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <p className="project-description-text">{project.description}</p>
+                        <div className="project-card-footer">
+                          <small className="upload-date">
+                            Created: {formatDateIST(project.createdAt)}
+                          </small>
+                          <div className="status-actions">
+                            <select
+                              value={project.status}
+                              onChange={(e) => handleStatusUpdate(project.id, e.target.value)}
+                              className="status-select"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="under_review">Under Review</option>
+                              <option value="approved">Approved</option>
+                              <option value="needs_revision">Needs Revision</option>
+                            </select>
+                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                              <Button variant="ghost" size="sm" onClick={() => handleViewProjectDocs(project.id)}>
+                                <Eye size={14} /> {expandedProjectDocs === project.id ? 'Hide Docs' : 'Phase Docs'}
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => { setDeadlineProject(project.id); setDeadlineForms({}); setActiveSection('deadlines') }}>
+                                <Calendar size={14} /> Deadlines
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => { setMentorUploadProject(project.id); setMentorUploadPhase(''); setMentorUploadFiles([]) }}>
+                                <Upload size={14} /> Upload Docs
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Phase-wise document view */}
+                        {expandedProjectDocs === project.id && (
+                          <div style={{ marginTop: '12px', padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                            <h4 style={{ marginBottom: '8px', fontSize: '0.875rem' }}>Phase-wise Documents</h4>
+                            {loadingPhaseData ? (
+                              <p className="muted">Loading phases...</p>
+                            ) : projectPhaseData ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {(projectPhaseData.phases || []).map(phase => {
+                                  const phaseFiles = (projectPhaseData.files || []).filter(f => f.phaseId === phase.id)
+                                  const generalFiles = phase.phaseNumber === 1 ? (projectPhaseData.files || []).filter(f => !f.phaseId) : []
+                                  return (
+                                    <div key={phase.id} style={{ padding: '8px', background: 'var(--bg-primary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <strong style={{ fontSize: '0.8125rem' }}>Phase {phase.phaseNumber}: {phase.phaseName}</strong>
+                                        <span style={{ fontSize: '0.75rem', color: phase.completed ? 'var(--success)' : 'var(--text-muted)' }}>
+                                          {phase.completed ? '✓ Complete' : 'Pending'}
+                                        </span>
+                                      </div>
+                                      {phase.deadline && <small style={{ color: 'var(--text-muted)' }}>Deadline: {formatDateIST(phase.deadline)}</small>}
+                                      {(phaseFiles.length > 0 || generalFiles.length > 0) ? (
+                                        <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                          {[...phaseFiles, ...generalFiles].map(f => (
+                                            <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', padding: '4px 8px', background: 'var(--bg-secondary)', borderRadius: '4px' }}>
+                                              <FileText size={14} />
+                                              <span style={{ flex: 1 }}>{f.originalName}</span>
+                                              <button type="button" onClick={() => setPreviewFile(f)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)' }} title="Preview">
+                                                <Eye size={14} />
+                                              </button>
+                                              {f.uploadedBy && f.uploadedBy !== project.studentId && (
+                                                <span style={{ fontSize: '0.7rem', color: 'var(--accent)', fontStyle: 'italic' }}>mentor</span>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>No files</p>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
+
+                        {/* Mentor doc upload modal */}
+                        {mentorUploadProject === project.id && (
+                          <div style={{ marginTop: '12px', padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--accent)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <h4 style={{ fontSize: '0.875rem', margin: 0 }}>Upload Documents for Student Reference</h4>
+                              <button type="button" onClick={() => setMentorUploadProject(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                              <div style={{ flex: 1, minWidth: '150px' }}>
+                                <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px' }}>Select Phase</label>
+                                <select value={mentorUploadPhase} onChange={e => setMentorUploadPhase(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-primary)', fontSize: '0.8125rem' }}>
+                                  <option value="">Choose phase</option>
+                                  {projectPhaseData && projectPhaseData.phases ? projectPhaseData.phases.map(ph => (
+                                    <option key={ph.id} value={ph.id}>Phase {ph.phaseNumber}: {ph.phaseName}</option>
+                                  )) : <option disabled>Load phase docs first</option>}
+                                </select>
+                              </div>
+                              <div style={{ flex: 1, minWidth: '150px' }}>
+                                <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px' }}>Files</label>
+                                <input type="file" multiple onChange={e => setMentorUploadFiles(Array.from(e.target.files))} style={{ fontSize: '0.8125rem' }} />
+                              </div>
+                              <Button variant="primary" size="sm" onClick={handleMentorDocUpload} loading={uploadingMentorDocs} disabled={uploadingMentorDocs || !mentorUploadPhase || mentorUploadFiles.length === 0}>
+                                <Upload size={14} /> Upload
+                              </Button>
+                            </div>
+                            {mentorUploadFiles.length > 0 && (
+                              <div style={{ marginTop: '6px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                {mentorUploadFiles.length} file(s) selected
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
+                      <Button variant="ghost" size="sm" disabled={projectPage <= 1} onClick={() => setProjectPage(p => p - 1)}>
+                        <ChevronLeft size={16} /> Previous
+                      </Button>
+                      <span style={{ fontSize: '0.875rem' }}>Page {projectPage} of {totalPages}</span>
+                      <Button variant="ghost" size="sm" disabled={projectPage >= totalPages} onClick={() => setProjectPage(p => p + 1)}>
+                        Next <ChevronRight size={16} />
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
+          </section>
+
+          {/* Category Management */}
+          <section className="student-table-card" id="categories" style={{ display: activeSection === 'categories' ? 'block' : 'none' }}>
+            <div className="section-header">
+              <div>
+                <h2>Project Categories</h2>
+                <p>Create categories for students to classify their projects</p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <input
+                type="text"
+                placeholder="New category name..."
+                value={newCategoryName}
+                onChange={e => setNewCategoryName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCreateCategory()}
+                style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', fontSize: '0.875rem' }}
+              />
+              <Button variant="primary" size="sm" onClick={handleCreateCategory}>
+                <Plus size={14} /> Create
+              </Button>
+            </div>
+            {categories.length === 0 ? (
+              <p className="muted">No categories created yet.</p>
             ) : (
-              <div className="projects-grid">
-                {uploadedProjects.map(project => (
-                  <div key={project.id} className="project-card">
-                    <div className="project-card-header">
-                      <div>
-                        <h3>{project.title}</h3>
-                        <p className="project-student">
-                          <strong>{project.uniqueProjectId}</strong>
-                        </p>
-                      </div>
-                      <span className={`status-chip project-status ${project.status}`}>
-                        {project.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <p className="project-description-text">{project.description}</p>
-                    <div className="project-card-footer">
-                      <small className="upload-date">
-                        Created: {new Date(project.createdAt).toLocaleString()}
-                      </small>
-                      <div className="status-actions">
-                        <select
-                          value={project.status}
-                          onChange={(e) => handleStatusUpdate(project.id, e.target.value)}
-                          className="status-select"
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="under_review">Under Review</option>
-                          <option value="approved">Approved</option>
-                          <option value="needs_revision">Needs Revision</option>
-                        </select>
-                        <Button variant="ghost" size="sm" onClick={() => { setDeadlineProject(project.id); setDeadlineForms({}); setActiveSection('deadlines') }} style={{ marginTop: '4px' }}>
-                          <Calendar size={14} /> Deadlines
-                        </Button>
-                      </div>
-                    </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {categories.map(c => (
+                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                    <Tag size={14} />
+                    <span style={{ fontWeight: 500, fontSize: '0.875rem' }}>{c.name}</span>
+                    {c.branch && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({c.branch})</span>}
+                    <small style={{ color: 'var(--text-muted)' }}>by {c.creatorName}</small>
+                    <button type="button" onClick={() => handleDeleteCategory(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem' }} title="Delete">×</button>
                   </div>
                 ))}
               </div>
@@ -985,7 +1319,7 @@ const TeacherDashboard = () => {
                           <div key={fb.id} style={{ padding: '10px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                               <strong style={{ fontSize: '0.875rem' }}>{fb.reviewerName || 'Reviewer'}</strong>
-                              <small style={{ color: 'var(--text-muted)' }}>{new Date(fb.createdAt).toLocaleDateString()}</small>
+                              <small style={{ color: 'var(--text-muted)' }}>{formatDateIST(fb.createdAt)}</small>
                             </div>
                             <div style={{ display: 'flex', gap: '2px', marginBottom: '4px' }}>
                               {[...Array(5)].map((_, i) => (
@@ -1065,6 +1399,8 @@ const TeacherDashboard = () => {
               </div>
             </div>
           )}
+
+          {previewFile && <DocPreview file={previewFile} onClose={() => setPreviewFile(null)} />}
         </main>
       </div>
     </DashboardLayout>

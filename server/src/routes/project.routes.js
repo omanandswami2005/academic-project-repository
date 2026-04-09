@@ -30,6 +30,10 @@ const {
     respondMentorRequest,
     setPhaseDeadlines,
     getOverduePhases,
+    createPhase,
+    renamePhase,
+    deletePhase,
+    uploadPhaseFile,
 } = require('../controllers/project.controller');
 
 // Search must come before :id to avoid conflict
@@ -64,5 +68,13 @@ router.patch('/:id/mentor/respond', authenticate, authorize('teacher'), respondM
 
 // FR13: Teacher-set deadlines
 router.patch('/:id/deadlines', authenticate, authorize('teacher', 'admin'), setPhaseDeadlines);
+
+// Custom phase CRUD
+router.post('/:id/phases/custom', authenticate, authorize('student'), createPhase);
+router.patch('/:id/phases/:phaseId/rename', authenticate, authorize('student'), renamePhase);
+router.delete('/:id/phases/:phaseId', authenticate, authorize('student'), deletePhase);
+
+// Phase file upload (student owner or teacher mentor)
+router.post('/:id/phases/:phaseId/files', authenticate, parseMultipartFiles, uploadPhaseFile);
 
 module.exports = router;

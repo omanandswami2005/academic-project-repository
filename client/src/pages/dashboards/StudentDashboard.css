@@ -1280,3 +1280,164 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ── Upload Modal ── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    max-width: 600px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.modal-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.modal-header .btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+}
+
+.modal-header .btn-icon:hover {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+
+/* ── Project Search Bar ── */
+.project-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.project-search-bar svg {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.project-search-bar .form-input {
+    border: none;
+    background: transparent;
+    padding: 0;
+    flex: 1;
+}
+
+.project-search-bar .form-input:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* ── Collapsible Project Content ── */
+.project-expanded-content {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Phase Files ── */
+.phase-files {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.phase-file-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.phase-file-item span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.phase-file-upload {
+    font-size: 0.75rem;
+}
+
+.phase-file-upload input[type="file"] {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* ── Kanban card file badges ── */
+.kanban-card-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 0.35rem;
+}
+
+.kanban-file-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.625rem;
+    font-family: inherit;
+    background: var(--bg-secondary);
+    color: var(--accent);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.kanban-file-btn:hover {
+    background: var(--bg-tertiary);
+}

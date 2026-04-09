@@ -167,6 +167,16 @@ const SignupPage = () => {
             </>
           )}
 
+          {role === 'teacher' && (
+            <div className="form-group">
+              <label className="form-label"><Building2 size={15} /> Department</label>
+              <select name="branch" className="form-input" onChange={handleChange} required>
+                <option value="">Select Department</option>
+                {branches.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+          )}
+
           <div className="form-group">
             <label className="form-label"><Lock size={15} /> Password</label>
             <div className="password-wrapper">

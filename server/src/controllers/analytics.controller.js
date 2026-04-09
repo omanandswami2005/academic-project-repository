@@ -1,6 +1,6 @@
-const { eq, desc, count, avg, sql, inArray } = require('drizzle-orm');
+const { eq, and, desc, count, avg, inArray } = require('drizzle-orm');
 const { getDB } = require('../config/db');
-const { users, projects, projectPhases, feedback } = require('../db/schema');
+const { users, projects, projectPhases, projectFiles, feedback } = require('../db/schema');
 const logger = require('../utils/logger');
 
 /**
@@ -66,12 +66,12 @@ const getDepartmentStats = async (req, res) => {
         // Total students in branch
         const [studentCount] = await db.select({ total: count() })
             .from(users)
-            .where(sql`${users.role} = 'student' AND ${users.branch} = ${branch}`);
+            .where(and(eq(users.role, 'student'), eq(users.branch, branch)));
 
         // Total projects from students in branch
         const branchStudents = await db.select({ id: users.id })
             .from(users)
-            .where(sql`${users.role} = 'student' AND ${users.branch} = ${branch}`);
+            .where(and(eq(users.role, 'student'), eq(users.branch, branch)));
 
         const studentIds = branchStudents.map((s) => s.id);
 
@@ -195,4 +195,157 @@ const getTopStudents = async (req, res) => {
     }
 };
 
-module.exports = { getSkillRadar, getDepartmentStats, getTopStudents };
+/**
+ * GET /api/analytics/status-distribution
+ */
+const getProjectStatusDistribution = async (req, res) => {
+    try {
+        const db = getDB();
+        const { branch } = req.query;
+
+        let allProjects;
+        if (branch) {
+            const branchStudents = await db.select({ id: users.id }).from(users)
+                .where(and(eq(users.role, 'student'), eq(users.branch, branch)));
+            const ids = branchStudents.map(s => s.id);
+            allProjects = ids.length > 0
+                ? await db.select({ status: projects.status }).from(projects).where(inArray(projects.studentId, ids))
+                : [];
+        } else {
+            allProjects = await db.select({ status: projects.status }).from(projects);
+        }
+
+        const counts = {};
+        for (const p of allProjects) {
+            counts[p.status] = (counts[p.status] || 0) + 1;
+        }
+
+        const distribution = Object.entries(counts).map(([status, value]) => ({
+            name: status.replace('_', ' '),
+            value,
+        }));
+
+        res.status(200).json({ distribution });
+    } catch (error) {
+        logger.error('ANALYTICS', 'Status distribution failed', error);
+        res.status(500).json({ message: 'Internal Server Error.' });
+    }
+};
+
+/**
+ * GET /api/analytics/monthly-trend
+ */
+const getMonthlyProjectTrend = async (req, res) => {
+    try {
+        const db = getDB();
+        const { branch } = req.query;
+
+        let allProjects;
+        if (branch) {
+            const branchStudents = await db.select({ id: users.id }).from(users)
+                .where(and(eq(users.role, 'student'), eq(users.branch, branch)));
+            const ids = branchStudents.map(s => s.id);
+            allProjects = ids.length > 0
+                ? await db.select({ createdAt: projects.createdAt }).from(projects).where(inArray(projects.studentId, ids))
+                : [];
+        } else {
+            allProjects = await db.select({ createdAt: projects.createdAt }).from(projects);
+        }
+
+        const now = new Date();
+        const months = [];
+        for (let i = 11; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            months.push({
+                key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                label: d.toLocaleString('en-IN', { month: 'short', year: '2-digit' }),
+            });
+        }
+
+        const trend = months.map(m => {
+            const cnt = allProjects.filter(p => {
+                const d = new Date(p.createdAt);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === m.key;
+            }).length;
+            return { month: m.label, projects: cnt };
+        });
+
+        res.status(200).json({ trend });
+    } catch (error) {
+        logger.error('ANALYTICS', 'Monthly trend failed', error);
+        res.status(500).json({ message: 'Internal Server Error.' });
+    }
+};
+
+/**
+ * GET /api/analytics/student-summary/:userId
+ */
+const getStudentAnalyticsSummary = async (req, res) => {
+    try {
+        const db = getDB();
+        const userId = parseInt(req.params.userId);
+
+        const studentProjects = await db.select().from(projects).where(eq(projects.studentId, userId));
+
+        const statusCounts = {};
+        let totalStars = 0;
+        let totalPhases = 0;
+        let completedPhases = 0;
+        const domainCounts = {};
+
+        for (const p of studentProjects) {
+            statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
+            totalStars += p.stars || 0;
+            if (Array.isArray(p.domainTags)) {
+                for (const tag of p.domainTags) {
+                    domainCounts[tag] = (domainCounts[tag] || 0) + 1;
+                }
+            }
+        }
+
+        for (const p of studentProjects) {
+            const phases = await db.select().from(projectPhases).where(eq(projectPhases.projectId, p.id));
+            totalPhases += phases.length;
+            completedPhases += phases.filter(ph => ph.completed).length;
+        }
+
+        let totalFiles = 0;
+        for (const p of studentProjects) {
+            const [fileCount] = await db.select({ total: count() }).from(projectFiles).where(eq(projectFiles.projectId, p.id));
+            totalFiles += fileCount?.total || 0;
+        }
+
+        let totalFeedback = 0;
+        for (const p of studentProjects) {
+            const [fbCount] = await db.select({ total: count() }).from(feedback).where(eq(feedback.projectId, p.id));
+            totalFeedback += fbCount?.total || 0;
+        }
+
+        const statusDistribution = Object.entries(statusCounts).map(([name, value]) => ({
+            name: name.replace('_', ' '),
+            value,
+        }));
+
+        const domainDistribution = Object.entries(domainCounts).map(([name, value]) => ({
+            name,
+            value,
+        }));
+
+        res.status(200).json({
+            totalProjects: studentProjects.length,
+            totalStars,
+            totalPhases,
+            completedPhases,
+            phaseCompletionRate: totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0,
+            totalFiles,
+            totalFeedback,
+            statusDistribution,
+            domainDistribution,
+        });
+    } catch (error) {
+        logger.error('ANALYTICS', `Student summary failed for userId=${req.params.userId}`, error);
+        res.status(500).json({ message: 'Internal Server Error.' });
+    }
+};
+
+module.exports = { getSkillRadar, getDepartmentStats, getTopStudents, getProjectStatusDistribution, getMonthlyProjectTrend, getStudentAnalyticsSummary };

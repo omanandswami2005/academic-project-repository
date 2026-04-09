@@ -16,6 +16,7 @@ import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
 import { projectAPI, feedbackAPI, analyticsAPI } from '../../services/api'
 import toast from 'react-hot-toast'
+import { formatDateIST } from '../../utils/date'
 import './IndustryExpertDashboard.css'
 
 const branchFilters = ['All', 'CSE', 'CSBS', 'IT', 'Mechanical', 'Electrical', 'Civil', 'A&R']
@@ -647,7 +648,7 @@ const IndustryExpertDashboard = () => {
                             <div className="phase-info">
                               <strong>{phase.phaseName}</strong>
                               {phase.completed && phase.completedAt && (
-                                <span>{new Date(phase.completedAt).toLocaleDateString()}</span>
+                                <span>{formatDateIST(phase.completedAt)}</span>
                               )}
                             </div>
                           </div>

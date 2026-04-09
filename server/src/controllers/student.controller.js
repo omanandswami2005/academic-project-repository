@@ -38,7 +38,7 @@ const getStudentsByBranch = async (req, res) => {
                         .from(projectPhases)
                         .where(eq(projectPhases.projectId, latestProject.id));
                     const completedPhases = phases.filter((p) => p.completed).length;
-                    progress = Math.round((completedPhases / 6) * 100);
+                    progress = phases.length > 0 ? Math.round((completedPhases / phases.length) * 100) : 0;
                 }
 
                 return {

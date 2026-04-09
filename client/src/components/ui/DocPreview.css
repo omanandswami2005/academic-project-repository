@@ -1,0 +1,110 @@
+.doc-preview-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.doc-preview-panel {
+    background: var(--bg-primary, #fff);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 900px;
+    height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+.doc-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-primary, #e5e7eb);
+    flex-shrink: 0;
+}
+
+.doc-preview-header h4 {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
+}
+
+.doc-preview-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.doc-preview-header-actions a,
+.doc-preview-header-actions button {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8125rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-primary, #e5e7eb);
+    background: var(--bg-secondary, #f9fafb);
+    color: var(--text-primary);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.doc-preview-header-actions button:hover,
+.doc-preview-header-actions a:hover {
+    background: var(--bg-tertiary, #f0f0f0);
+}
+
+.doc-preview-body {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.doc-preview-body iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.doc-preview-body img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.doc-preview-body pre {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 16px;
+    overflow: auto;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    background: var(--bg-secondary, #f9fafb);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.doc-preview-unsupported {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted, #6b7280);
+}
+
+.doc-preview-unsupported p {
+    margin: 8px 0;
+}

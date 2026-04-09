@@ -86,13 +86,13 @@ const login = async (req, res) => {
         const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
         if (!user) {
             logger.warn('AUTH', `Login failed — user not found: ${email}`);
-            return res.status(400).json({ message: 'User not found. Please check your email.' });
+            return res.status(400).json({ message: 'Invalid email or password.' });
         }
 
         const isMatch = await bcrypt.compare(password, user.passwordHash);
         if (!isMatch) {
             logger.warn('AUTH', `Login failed — wrong password for ${email}`);
-            return res.status(400).json({ message: 'Incorrect password. Please try again.' });
+            return res.status(400).json({ message: 'Invalid email or password.' });
         }
 
         const tokenPayload = { id: user.id, email: user.email, role: user.role };

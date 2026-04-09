@@ -64,7 +64,7 @@ router.post('/:id/invite', authenticate, authorize('student'), inviteMember);
 
 // FR9: Mentor request / respond
 router.patch('/:id/mentor', authenticate, authorize('student'), requestMentor);
-router.patch('/:id/mentor/respond', authenticate, authorize('teacher'), respondMentorRequest);
+router.patch('/:id/mentor/respond', authenticate, authorize('teacher', 'admin'), respondMentorRequest);
 
 // FR13: Teacher-set deadlines
 router.patch('/:id/deadlines', authenticate, authorize('teacher', 'admin'), setPhaseDeadlines);

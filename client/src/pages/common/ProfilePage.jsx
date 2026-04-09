@@ -137,6 +137,10 @@ const ProfilePage = () => {
               <div>
                 <strong>{profile.name || 'User'}</strong>
                 <p>{profile.bio || 'No bio available'}</p>
+                <span style={{ display: 'inline-block', padding: '2px 10px', background: 'var(--accent-subtle, #eef2ff)', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>
+                  {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'N/A'}{user?.branch ? ` · ${user.branch}` : ''}
+                </span>
+                <br />
                 <span>Email • {profile.email || 'N/A'}</span>
                 <br />
                 <span>Phone • {profile.phone || 'No phone number added'}</span>

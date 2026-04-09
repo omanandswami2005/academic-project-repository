@@ -23,9 +23,7 @@ const ALLOWED_MIME_TYPES = [
     'text/csv',
     'text/markdown',
     'text/x-markdown',
-    'text/html',
     'text/css',
-    'text/javascript',
     'image/jpeg',
     'image/png',
     'image/gif',
@@ -106,10 +104,13 @@ function parseMultipartFiles(req, res, next) {
 
     const chunks = [];
     let totalSize = 0;
+    let responded = false;
 
     req.on('data', (chunk) => {
+        if (responded) return;
         totalSize += chunk.length;
         if (totalSize > MAX_FILE_SIZE * MAX_FILES) {
+            responded = true;
             req.destroy();
             return res.status(400).json({ message: 'Total upload size exceeds limit.' });
         }
@@ -117,6 +118,7 @@ function parseMultipartFiles(req, res, next) {
     });
 
     req.on('end', () => {
+        if (responded) return;
         try {
             const rawBody = Buffer.concat(chunks);
             const { fields, files } = parseMultipart(rawBody, boundary);
@@ -126,12 +128,18 @@ function parseMultipartFiles(req, res, next) {
             req.parsedFiles = files;
             next();
         } catch (err) {
-            return res.status(400).json({ message: `Upload parsing error: ${err.message}` });
+            if (!responded) {
+                responded = true;
+                return res.status(400).json({ message: `Upload parsing error: ${err.message}` });
+            }
         }
     });
 
     req.on('error', (err) => {
-        return res.status(400).json({ message: `Upload error: ${err.message}` });
+        if (!responded) {
+            responded = true;
+            return res.status(400).json({ message: `Upload error: ${err.message}` });
+        }
     });
 }
 

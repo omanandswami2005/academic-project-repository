@@ -22,8 +22,8 @@ function sanitizeString(str) {
     for (const pattern of XSS_PATTERNS) {
         cleaned = cleaned.replace(pattern, '');
     }
-    // Encode remaining angle brackets in user text (but not in valid HTML-like content)
-    cleaned = cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // XSS patterns above already strip dangerous constructs.
+    // Angle bracket encoding removed — data is JSON-transported and React auto-escapes on render.
     return cleaned;
 }
 

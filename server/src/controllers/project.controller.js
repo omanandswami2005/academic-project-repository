@@ -155,6 +155,22 @@ const getAllProjects = async (req, res) => {
             conditions.push(eq(projects.categoryId, parseInt(categoryId)));
         }
 
+        // Filter by branch at SQL level so pagination total is accurate
+        if (branch) {
+            const branchStudents = await db.select({ id: users.id }).from(users)
+                .where(and(eq(users.role, 'student'), eq(users.branch, branch)));
+            const branchIds = branchStudents.map(s => s.id);
+            if (branchIds.length > 0) {
+                conditions.push(inArray(projects.studentId, branchIds));
+            } else {
+                return res.status(200).json({
+                    message: 'Projects retrieved successfully',
+                    projects: [],
+                    pagination: { page: pageNum, limit: limitNum, total: 0, totalPages: 0 },
+                });
+            }
+        }
+
         // If the user is student, show public, department-visible (same branch), or their own
         if (req.user && req.user.role === 'student') {
             const [student] = await db.select({ branch: users.branch }).from(users).where(eq(users.id, req.user.id)).limit(1);
@@ -201,11 +217,8 @@ const getAllProjects = async (req, res) => {
             .limit(limitNum)
             .offset(offset);
 
-        // Filter by branch (via student's branch)
+        // Filter by domain in-memory (JSON array filtering is complex in SQL)
         let filtered = projectList;
-        if (branch) {
-            filtered = projectList.filter((p) => p.studentBranch === branch);
-        }
         if (domain) {
             filtered = filtered.filter((p) =>
                 Array.isArray(p.domainTags) && p.domainTags.some((tag) =>
@@ -976,10 +989,11 @@ async function respondToInvite(req, res) {
         // Notify project owner
         const [project] = await db.select().from(projects).where(eq(projects.id, member.projectId)).limit(1);
         if (project) {
+            const [currentUser] = await db.select({ username: users.username }).from(users).where(eq(users.id, req.user.id)).limit(1);
             await db.insert(notifications).values({
                 userId: project.studentId,
                 title: 'Invitation Response',
-                message: `${req.user.username || 'A student'} has ${newStatus} your invitation to "${project.title}".`,
+                message: `${currentUser?.username || 'A student'} has ${newStatus} your invitation to "${project.title}".`,
                 type: action === 'accept' ? 'success' : 'info',
             });
         }
@@ -1055,10 +1069,11 @@ async function requestMentor(req, res) {
             .where(eq(projects.id, projectId));
 
         // Notify the teacher
+        const [currentUser] = await db.select({ username: users.username }).from(users).where(eq(users.id, req.user.id)).limit(1);
         await db.insert(notifications).values({
             userId: mentorId,
             title: 'Mentor Request',
-            message: `${req.user.username || 'A student'} has requested you as mentor for "${project.title}".`,
+            message: `${currentUser?.username || 'A student'} has requested you as mentor for "${project.title}".`,
             type: 'info',
         });
 

@@ -44,7 +44,8 @@ const roleLinks = {
     { label: 'My Profile', path: '/profile', icon: BarChart2 },
   ],
   admin: [
-    { label: 'All Projects', path: '/home', icon: FolderOpen },
+    { label: 'Admin Dashboard', path: '/teacher', icon: FolderOpen },
+    { label: 'Branch Overview', path: '/teacher/branches', icon: BarChart2 },
     { label: 'My Profile', path: '/profile', icon: Users },
   ],
 }
@@ -168,9 +169,10 @@ const HomeDashboard = () => {
             <ul className="reminder-list">
               <li>Use the top navigation bar to switch sections.</li>
               <li>Dark mode toggle is next to the notification bell.</li>
-              <li>Teachers can approve projects from the branch view.</li>
-              <li>Students: mark phases complete as you progress.</li>
-              <li>Industry experts can evaluate and score public projects.</li>
+              {user?.role === 'student' && <li>Mark phases complete as you progress.</li>}
+              {user?.role === 'teacher' && <li>Approve projects and set deadlines from the branch view.</li>}
+              {user?.role === 'admin' && <li>Admins can manage all branches — switch branches from the dashboard.</li>}
+              {user?.role === 'expert' && <li>Evaluate and score public projects across all branches.</li>}
             </ul>
           </section>
 

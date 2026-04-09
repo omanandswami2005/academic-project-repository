@@ -566,14 +566,14 @@ const TeacherDashboard = () => {
             handleSectionChange(id)
           }}
           username={user?.username || user?.name}
-          role="Teacher"
+          role={user?.role === 'admin' ? 'Admin' : 'Teacher'}
           onLogout={handleLogout}
         />
 
         <main className="dashboard-main">
           <header className="dashboard-header">
             <div>
-              <p className="headline">Teacher Control Center</p>
+              <p className="headline">{user?.role === 'admin' ? 'Admin Control Center' : 'Teacher Control Center'}</p>
               <h1>Projects · {selectedBranch} Branch</h1>
             </div>
           </header>

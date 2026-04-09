@@ -376,10 +376,16 @@ const TeacherDashboard = () => {
   }, [branchFromState])
 
   useEffect(() => {
-    if (!selectedBranch) {
-      navigate('/teacher/branches', { replace: true })
+    if (selectedBranch) return
+
+    if (user?.branch) {
+      setSelectedBranch(user.branch)
+      localStorage.setItem('selectedBranch', user.branch)
+      return
     }
-  }, [selectedBranch, navigate])
+
+    navigate('/teacher/branches', { replace: true })
+  }, [selectedBranch, user?.branch, navigate])
 
   useEffect(() => {
     setCommentDraft('')

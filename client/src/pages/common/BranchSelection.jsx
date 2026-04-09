@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Code, Database, Wrench, Building, Palette, Zap } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 import './BranchSelection.css'
 
 const BranchSelection = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const branches = [
     { id: 'cse', name: 'CSE', icon: Code },
@@ -20,10 +22,20 @@ const BranchSelection = () => {
     navigate('/teacher', { state: { branch: branch.name } })
   }
 
+  const handleBackToDashboard = () => {
+    const fallbackBranch = localStorage.getItem('selectedBranch') || user?.branch
+    if (fallbackBranch) {
+      localStorage.setItem('selectedBranch', fallbackBranch)
+      navigate('/teacher', { state: { branch: fallbackBranch } })
+      return
+    }
+    navigate('/home')
+  }
+
   return (
     <div className="selection-page">
       <div className="selection-container" style={{ maxWidth: '900px' }}>
-        <button className="selection-back" onClick={() => navigate('/teacher')}>
+        <button className="selection-back" onClick={handleBackToDashboard}>
           <ArrowLeft size={15} />
           Back to Dashboard
         </button>

@@ -7,24 +7,26 @@ import { FolderOpen, Clock, CheckCircle, Users, BookOpen, BarChart2, Bell } from
 import toast from 'react-hot-toast'
 import './HomeDashboard.css'
 
-const CACHE_KEY = 'aprs_home_cache'
+const CACHE_KEY_PREFIX = 'aprs_home_cache'
 const CACHE_TTL = 2 * 60 * 1000 // 2 minutes
 
-const getCache = () => {
+const getCacheKey = (user) => `${CACHE_KEY_PREFIX}_${user?.id || 'anon'}_${user?.role || 'na'}`
+
+const getCache = (cacheKey) => {
   try {
-    const raw = localStorage.getItem(CACHE_KEY)
+    const raw = localStorage.getItem(cacheKey)
     if (!raw) return null
     const parsed = JSON.parse(raw)
     if (Date.now() - parsed.ts > CACHE_TTL) {
-      localStorage.removeItem(CACHE_KEY)
+      localStorage.removeItem(cacheKey)
       return null
     }
     return parsed.data
   } catch { return null }
 }
 
-const setCache = (data) => {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })) } catch { /* ignore */ }
+const setCache = (cacheKey, data) => {
+  try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data })) } catch { /* ignore */ }
 }
 
 const roleLinks = {
@@ -59,9 +61,10 @@ const HomeDashboard = () => {
 
   useEffect(() => {
     if (!user) return
+    const cacheKey = getCacheKey(user)
 
     // Try cache first
-    const cached = getCache()
+    const cached = getCache(cacheKey)
     if (cached) {
       setProjectStats(cached.projectStats)
       setRecentNotifs(cached.recentNotifs)
@@ -71,21 +74,28 @@ const HomeDashboard = () => {
 
     const load = async () => {
       try {
-        const [projRes, notifRes] = await Promise.all([
-          projectAPI.getAll({ limit: 100 }),
-          notificationAPI.getAll({ limit: 5 }),
-        ])
+        const [projRes, notifRes] = await Promise.all(
+          user.role === 'student'
+            ? [
+              projectAPI.getByStudent(user.id),
+              notificationAPI.getAll({ limit: 5 }),
+            ]
+            : [
+              projectAPI.getAll({ limit: 100 }),
+              notificationAPI.getAll({ limit: 5 }),
+            ]
+        )
         const all = projRes.data.projects || []
         const stats = {
-          total: projRes.data.pagination?.total || all.length,
+          total: user.role === 'student' ? all.length : (projRes.data.pagination?.total || all.length),
           pending: all.filter(p => p.status === 'pending').length,
           approved: all.filter(p => p.status === 'approved').length,
-          inProgress: all.filter(p => p.status === 'in_progress').length,
+          inProgress: all.filter(p => p.status === 'under_review' || p.status === 'needs_revision').length,
         }
         const notifs = notifRes.data.notifications?.slice(0, 4) || []
         setProjectStats(stats)
         setRecentNotifs(notifs)
-        setCache({ projectStats: stats, recentNotifs: notifs })
+        setCache(cacheKey, { projectStats: stats, recentNotifs: notifs })
       } catch {
         toast.error('Failed to load dashboard data.')
       } finally {
@@ -101,7 +111,7 @@ const HomeDashboard = () => {
     { label: 'Total Projects', value: projectStats.total, icon: FolderOpen },
     { label: 'Pending Review', value: projectStats.pending, icon: Clock },
     { label: 'Approved', value: projectStats.approved, icon: CheckCircle },
-    { label: 'In Progress', value: projectStats.inProgress, icon: BarChart2 },
+    { label: 'In Review', value: projectStats.inProgress, icon: BarChart2 },
   ], [projectStats])
 
   return (

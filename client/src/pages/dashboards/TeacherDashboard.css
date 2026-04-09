@@ -409,6 +409,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-width: 0;
 }
 
 .status-select {
@@ -419,6 +420,7 @@
     color: var(--text-primary);
     font-family: inherit;
     font-size: 0.75rem;
+    max-width: 100%;
 }
 
 .loading-message {
@@ -463,6 +465,7 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
+    min-width: 0;
 }
 
 .review-card-icon {
@@ -992,5 +995,43 @@
 
     .projects-grid {
         grid-template-columns: 1fr;
+    }
+
+    .project-card {
+        padding: 1rem;
+    }
+
+    .project-card-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .project-card-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .status-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .status-actions>div {
+        flex-wrap: wrap;
+    }
+
+    .status-select {
+        width: 100%;
+    }
+
+    .student-table {
+        min-width: 640px;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }

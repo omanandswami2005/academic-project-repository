@@ -1,6 +1,6 @@
-const { eq, and, desc, count, avg, inArray } = require('drizzle-orm');
+const { eq, and, desc, count, avg, inArray, or } = require('drizzle-orm');
 const { getDB } = require('../config/db');
-const { users, projects, projectPhases, projectFiles, feedback } = require('../db/schema');
+const { users, projects, projectPhases, projectFiles, feedback, projectMembers } = require('../db/schema');
 const logger = require('../utils/logger');
 
 /**
@@ -11,9 +11,24 @@ const getSkillRadar = async (req, res) => {
         const db = getDB();
         const userId = parseInt(req.params.userId);
 
+        const memberships = await db.select({
+            projectId: projectMembers.projectId
+        })
+            .from(projectMembers)
+            .where(and(
+                eq(projectMembers.userId, userId),
+                eq(projectMembers.status, 'accepted')
+            ));
+        const memberProjectIds = memberships.map(m => m.projectId);
+
+        const orConditions = [eq(projects.studentId, userId)];
+        if (memberProjectIds.length > 0) {
+            orConditions.push(inArray(projects.id, memberProjectIds));
+        }
+
         const studentProjects = await db.select()
             .from(projects)
-            .where(eq(projects.studentId, userId));
+            .where(or(...orConditions));
 
         const skillMap = {};
         for (const project of studentProjects) {
@@ -285,7 +300,22 @@ const getStudentAnalyticsSummary = async (req, res) => {
         const db = getDB();
         const userId = parseInt(req.params.userId);
 
-        const studentProjects = await db.select().from(projects).where(eq(projects.studentId, userId));
+        const memberships = await db.select({
+            projectId: projectMembers.projectId
+        })
+            .from(projectMembers)
+            .where(and(
+                eq(projectMembers.userId, userId),
+                eq(projectMembers.status, 'accepted')
+            ));
+        const memberProjectIds = memberships.map(m => m.projectId);
+
+        const orConditions = [eq(projects.studentId, userId)];
+        if (memberProjectIds.length > 0) {
+            orConditions.push(inArray(projects.id, memberProjectIds));
+        }
+
+        const studentProjects = await db.select().from(projects).where(or(...orConditions));
 
         const statusCounts = {};
         let totalStars = 0;

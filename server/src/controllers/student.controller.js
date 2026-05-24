@@ -1,6 +1,6 @@
-const { eq, and, desc, count } = require('drizzle-orm');
+const { eq, and, desc, count, or, inArray } = require('drizzle-orm');
 const { getDB } = require('../config/db');
-const { users, projects, projectPhases, feedback } = require('../db/schema');
+const { users, projects, projectPhases, feedback, projectMembers } = require('../db/schema');
 const logger = require('../utils/logger');
 
 /**
@@ -24,13 +24,33 @@ const getStudentsByBranch = async (req, res) => {
 
         const studentsWithProjects = await Promise.all(
             students.map(async (student) => {
-                const studentProjects = await db.select()
-                    .from(projects)
-                    .where(eq(projects.studentId, student.id))
-                    .orderBy(desc(projects.createdAt))
+                // Check if student belongs to a project in the projectMembers table (group project)
+                const memberships = await db.select({
+                    projectId: projectMembers.projectId
+                })
+                    .from(projectMembers)
+                    .where(and(
+                        eq(projectMembers.userId, student.id),
+                        eq(projectMembers.status, 'accepted')
+                    ))
                     .limit(1);
 
-                const latestProject = studentProjects[0];
+                let latestProject = null;
+                if (memberships.length > 0) {
+                    const [proj] = await db.select()
+                        .from(projects)
+                        .where(eq(projects.id, memberships[0].projectId))
+                        .limit(1);
+                    latestProject = proj;
+                } else {
+                    // Fall back to matching projects where they are the owner/creator
+                    const studentProjects = await db.select()
+                        .from(projects)
+                        .where(eq(projects.studentId, student.id))
+                        .orderBy(desc(projects.createdAt))
+                        .limit(1);
+                    latestProject = studentProjects[0] || null;
+                }
 
                 let progress = 0;
                 if (latestProject) {
@@ -107,9 +127,24 @@ const getStudentSkills = async (req, res) => {
         const db = getDB();
         const studentId = parseInt(req.params.id);
 
+        const memberships = await db.select({
+            projectId: projectMembers.projectId
+        })
+            .from(projectMembers)
+            .where(and(
+                eq(projectMembers.userId, studentId),
+                eq(projectMembers.status, 'accepted')
+            ));
+        const memberProjectIds = memberships.map(m => m.projectId);
+
+        const orConditions = [eq(projects.studentId, studentId)];
+        if (memberProjectIds.length > 0) {
+            orConditions.push(inArray(projects.id, memberProjectIds));
+        }
+
         const studentProjects = await db.select()
             .from(projects)
-            .where(eq(projects.studentId, studentId));
+            .where(or(...orConditions));
 
         // Aggregate domain tags
         const skillMap = {};

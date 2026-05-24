@@ -175,10 +175,23 @@ const getAllProjects = async (req, res) => {
         if (req.user && req.user.role === 'student') {
             const [student] = await db.select({ branch: users.branch }).from(users).where(eq(users.id, req.user.id)).limit(1);
             const studentBranch = student?.branch;
+
+            // Get user's accepted group project IDs
+            const memberships = await db.select({ projectId: projectMembers.projectId })
+                .from(projectMembers)
+                .where(and(
+                    eq(projectMembers.userId, req.user.id),
+                    eq(projectMembers.status, 'accepted')
+                ));
+            const memberProjectIds = memberships.map(m => m.projectId);
+
             const visibilityConditions = [
                 eq(projects.visibility, 'public'),
                 eq(projects.studentId, req.user.id),
             ];
+            if (memberProjectIds.length > 0) {
+                visibilityConditions.push(inArray(projects.id, memberProjectIds));
+            }
             if (studentBranch) {
                 // Allow department-visible projects from same branch
                 visibilityConditions.push(
@@ -255,9 +268,24 @@ const getProjectsByStudent = async (req, res) => {
         const db = getDB();
         const studentId = parseInt(req.params.studentId);
 
+        const memberships = await db.select({
+            projectId: projectMembers.projectId
+        })
+            .from(projectMembers)
+            .where(and(
+                eq(projectMembers.userId, studentId),
+                eq(projectMembers.status, 'accepted')
+            ));
+        const memberProjectIds = memberships.map(m => m.projectId);
+
+        const orConditions = [eq(projects.studentId, studentId)];
+        if (memberProjectIds.length > 0) {
+            orConditions.push(inArray(projects.id, memberProjectIds));
+        }
+
         const projectList = await db.select()
             .from(projects)
-            .where(eq(projects.studentId, studentId))
+            .where(or(...orConditions))
             .orderBy(desc(projects.createdAt));
 
         // Get phases for each project
@@ -1258,6 +1286,21 @@ async function getPortfolio(req, res) {
         if (!user) return res.status(404).json({ message: 'User not found.' });
 
         // Get public/approved projects
+        const memberships = await db.select({
+            projectId: projectMembers.projectId
+        })
+            .from(projectMembers)
+            .where(and(
+                eq(projectMembers.userId, userId),
+                eq(projectMembers.status, 'accepted')
+            ));
+        const memberProjectIds = memberships.map(m => m.projectId);
+
+        const orConditions = [eq(projects.studentId, userId)];
+        if (memberProjectIds.length > 0) {
+            orConditions.push(inArray(projects.id, memberProjectIds));
+        }
+
         const userProjects = await db.select({
             id: projects.id,
             uniqueProjectId: projects.uniqueProjectId,
@@ -1270,7 +1313,7 @@ async function getPortfolio(req, res) {
         })
             .from(projects)
             .where(and(
-                eq(projects.studentId, userId),
+                or(...orConditions),
                 or(eq(projects.visibility, 'public'), eq(projects.status, 'approved'))
             ))
             .orderBy(desc(projects.createdAt));
@@ -1405,9 +1448,24 @@ async function getStudentReport(req, res) {
 
         if (!student) return res.status(404).json({ message: 'Student not found.' });
 
+        const memberships = await db.select({
+            projectId: projectMembers.projectId
+        })
+            .from(projectMembers)
+            .where(and(
+                eq(projectMembers.userId, studentId),
+                eq(projectMembers.status, 'accepted')
+            ));
+        const memberProjectIds = memberships.map(m => m.projectId);
+
+        const orConditions = [eq(projects.studentId, studentId)];
+        if (memberProjectIds.length > 0) {
+            orConditions.push(inArray(projects.id, memberProjectIds));
+        }
+
         const studentProjects = await db.select()
             .from(projects)
-            .where(eq(projects.studentId, studentId))
+            .where(or(...orConditions))
             .orderBy(desc(projects.createdAt));
 
         const projectsWithDetails = await Promise.all(

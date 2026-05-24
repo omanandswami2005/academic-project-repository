@@ -38,7 +38,7 @@ const createProject = async (req, res) => {
     try {
         const db = getDB();
         const userId = req.user.id;
-        const { title, description, domainTags, visibility, groupMembers, categoryId, semester } = req.body;
+        const { title, description, domainTags, visibility, groupMembers, categoryId, semester, sponsoredBy } = req.body;
 
         // Get user info for branch/year
         const [student] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
@@ -65,6 +65,7 @@ const createProject = async (req, res) => {
             studentId: userId,
             visibility: visibility || 'private',
             status: 'pending',
+            sponsoredBy: sponsoredBy || null,
         }).returning();
 
         // Create 6 default phases
@@ -218,6 +219,7 @@ const getAllProjects = async (req, res) => {
             mentorStatus: projects.mentorStatus,
             createdAt: projects.createdAt,
             updatedAt: projects.updatedAt,
+            sponsoredBy: projects.sponsoredBy,
             studentId: projects.studentId,
             studentName: users.username,
             studentEmail: users.email,
@@ -335,6 +337,7 @@ const getProjectById = async (req, res) => {
             mentorStatus: projects.mentorStatus,
             createdAt: projects.createdAt,
             updatedAt: projects.updatedAt,
+            sponsoredBy: projects.sponsoredBy,
             studentId: projects.studentId,
             studentName: users.username,
             studentEmail: users.email,
@@ -386,7 +389,7 @@ const updateProject = async (req, res) => {
     try {
         const db = getDB();
         const projectId = parseInt(req.params.id);
-        const { title, description, domainTags, visibility } = req.body;
+        const { title, description, domainTags, visibility, sponsoredBy } = req.body;
 
         const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
         if (!project) {
@@ -403,6 +406,7 @@ const updateProject = async (req, res) => {
         if (description) updateData.description = description;
         if (domainTags) updateData.domainTags = domainTags;
         if (visibility) updateData.visibility = visibility;
+        if (sponsoredBy !== undefined) updateData.sponsoredBy = sponsoredBy;
 
         const [updated] = await db.update(projects)
             .set(updateData)
@@ -1310,6 +1314,7 @@ async function getPortfolio(req, res) {
             status: projects.status,
             stars: projects.stars,
             createdAt: projects.createdAt,
+            sponsoredBy: projects.sponsoredBy,
         })
             .from(projects)
             .where(and(

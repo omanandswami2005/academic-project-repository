@@ -65,6 +65,7 @@ const createProjectSchema = z.object({
     groupMembers: z.array(z.number()).optional().default([]),
     categoryId: z.coerce.number().int().positive().optional(),
     semester: z.coerce.number().int().min(1).max(12).optional(),
+    sponsoredBy: z.string().max(255).optional().nullable(),
 });
 
 const updateProjectSchema = z.object({
@@ -72,6 +73,7 @@ const updateProjectSchema = z.object({
     description: z.string().min(10).optional(),
     domainTags: z.array(z.string()).optional(),
     visibility: z.enum(['public', 'private', 'department']).optional(),
+    sponsoredBy: z.string().max(255).optional().nullable(),
 });
 
 const updateProjectStatusSchema = z.object({

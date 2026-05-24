@@ -941,6 +941,11 @@ const TeacherDashboard = () => {
                                   {categories.find(c => c.id === project.categoryId)?.name}
                                 </span>
                               )}
+                              {project.sponsoredBy && (
+                                <span style={{ marginLeft: '8px', padding: '2px 8px', background: 'rgba(255, 193, 7, 0.12)', color: 'var(--accent-hover)', border: '1px solid rgba(255, 193, 7, 0.25)', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600 }}>
+                                  Sponsor: {project.sponsoredBy}
+                                </span>
+                              )}
                             </p>
                           </div>
                           <span className={`status-chip project-status ${project.status}`}>

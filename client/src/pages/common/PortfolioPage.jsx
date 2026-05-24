@@ -114,8 +114,17 @@ const PortfolioPage = () => {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                             <div>
                                                 <h3 style={{ margin: '0 0 4px' }}>{project.title}</h3>
-                                                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0 0 8px' }}>
-                                                    {project.uniqueProjectId} · ★ {project.stars || 0} · <span className={`status-chip ${project.status}`}>{project.status}</span>
+                                                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                                    <span>{project.uniqueProjectId}</span>
+                                                    <span>·</span>
+                                                    <span>★ {project.stars || 0}</span>
+                                                    <span>·</span>
+                                                    <span className={`status-chip ${project.status}`}>{project.status}</span>
+                                                    {project.sponsoredBy && (
+                                                        <span style={{ padding: '2px 8px', background: 'rgba(255, 193, 7, 0.15)', color: '#ffb300', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                                            Sponsor: {project.sponsoredBy}
+                                                        </span>
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>

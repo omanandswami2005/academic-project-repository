@@ -183,8 +183,9 @@ async function run() {
         description: 'This is a test project for API testing purposes',
         domainTags: ['web', 'nodejs'],
         visibility: 'public',
+        sponsoredBy: 'Google',
     }, studentToken);
-    test('Create project (student)', r.status === 201 && r.data?.project, r.data);
+    test('Create project (student)', r.status === 201 && r.data?.project && r.data.project.sponsoredBy === 'Google', r.data);
     if (r.data?.project) projectId = r.data.project.id;
 
     r = await req('POST', '/api/projects', {
@@ -226,8 +227,9 @@ async function run() {
         r = await req('PATCH', `/api/projects/${projectId}`, {
             title: 'Updated Test Project Alpha',
             description: 'Updated description for test project',
+            sponsoredBy: 'Tata Motors',
         }, studentToken);
-        test('Update project', r.status === 200, r.data);
+        test('Update project', r.status === 200 && r.data?.project?.sponsoredBy === 'Tata Motors', r.data);
 
         // Teacher updates status
         r = await req('PATCH', `/api/projects/${projectId}/status`, {

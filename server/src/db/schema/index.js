@@ -68,6 +68,7 @@ const projects = pgTable('projects', {
     status: varchar('status', { length: 30 }).notNull().default('pending'), // pending, under_review, approved, needs_revision, archived
     visibility: varchar('visibility', { length: 20 }).notNull().default('private'), // public, private, department
     stars: integer('stars').notNull().default(0),
+    sponsoredBy: varchar('sponsored_by', { length: 255 }),
     forkedFromId: integer('forked_from_id').references(() => projects.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

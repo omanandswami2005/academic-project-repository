@@ -55,6 +55,7 @@ const StudentDashboard = () => {
     description: '',
     domainTags: '',
     visibility: 'public',
+    sponsoredBy: '',
   })
   const [selectedFiles, setSelectedFiles] = useState([])
   const [uploading, setUploading] = useState(false)
@@ -395,6 +396,9 @@ const StudentDashboard = () => {
         formData.append('domainTags', JSON.stringify(projectForm.domainTags.split(',').map(t => t.trim()).filter(Boolean)))
       }
       formData.append('visibility', projectForm.visibility || 'public')
+      if (projectForm.sponsoredBy) {
+        formData.append('sponsoredBy', projectForm.sponsoredBy)
+      }
       if (selectedCategory) {
         formData.append('categoryId', selectedCategory.id)
       }
@@ -410,7 +414,7 @@ const StudentDashboard = () => {
 
       setUploadSuccess(true)
       toast.success('Project uploaded successfully!')
-      setProjectForm({ projectName: '', description: '', domainTags: '', visibility: 'public' })
+      setProjectForm({ projectName: '', description: '', domainTags: '', visibility: 'public', sponsoredBy: '' })
       setSelectedFiles([])
       setSelectedCategory(null)
       setCategorySearch('')
@@ -448,7 +452,8 @@ const StudentDashboard = () => {
     setEditForm({
       title: project.title,
       description: project.description,
-      domainTags: project.domainTags ? project.domainTags.join(', ') : ''
+      domainTags: project.domainTags ? project.domainTags.join(', ') : '',
+      sponsoredBy: project.sponsoredBy || ''
     })
   }
 
@@ -457,7 +462,8 @@ const StudentDashboard = () => {
       await projectAPI.update(projectId, {
         title: editForm.title,
         description: editForm.description,
-        domainTags: editForm.domainTags.split(',').map(t => t.trim()).filter(Boolean)
+        domainTags: editForm.domainTags.split(',').map(t => t.trim()).filter(Boolean),
+        sponsoredBy: editForm.sponsoredBy || null
       })
       toast.success('Project updated successfully')
       setEditingProject(null)
@@ -825,9 +831,13 @@ const StudentDashboard = () => {
                         <label htmlFor="project-description">Project Description <span className="required">*</span></label>
                         <textarea id="project-description" className="form-textarea" rows="4" placeholder="Describe your project…" value={projectForm.description} onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })} required />
                       </div>
-                      <div className="form-group">
+                       <div className="form-group">
                         <label htmlFor="project-tags">Domain Tags (comma separated)</label>
                         <input type="text" id="project-tags" className="form-input" placeholder="e.g. React, Machine Learning" value={projectForm.domainTags} onChange={(e) => setProjectForm({ ...projectForm, domainTags: e.target.value })} />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="project-sponsored">Sponsored By (Optional)</label>
+                        <input type="text" id="project-sponsored" className="form-input" placeholder="e.g. Google, Tata Motors" value={projectForm.sponsoredBy} onChange={(e) => setProjectForm({ ...projectForm, sponsoredBy: e.target.value })} />
                       </div>
                       <div className="form-group">
                         <label>Project Category</label>
@@ -960,6 +970,7 @@ const StudentDashboard = () => {
                                 <div style={{ marginTop: '8px', marginBottom: '8px' }}>
                                   <textarea className="form-textarea" rows="3" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} />
                                   <input className="form-input" style={{ marginTop: '8px' }} placeholder="Domain Tags (comma separated)" value={editForm.domainTags} onChange={e => setEditForm({ ...editForm, domainTags: e.target.value })} />
+                                  <input className="form-input" style={{ marginTop: '8px' }} placeholder="Sponsored By (Optional)" value={editForm.sponsoredBy} onChange={e => setEditForm({ ...editForm, sponsoredBy: e.target.value })} />
                                   <Button variant="primary" size="sm" style={{ marginTop: '8px' }} onClick={() => saveProjectEdit(project.id)}>Save Changes</Button>
                                 </div>
                               ) : (
@@ -968,6 +979,9 @@ const StudentDashboard = () => {
                               <div className="project-meta">
                                 <small>Uploaded: {formatDateIST(project.createdAt)}</small>
                                 <small>ID: {project.uniqueProjectId}</small>
+                                {project.sponsoredBy && (
+                                  <small style={{ color: '#ffb300', fontWeight: 600 }}>Sponsored by: {project.sponsoredBy}</small>
+                                )}
                               </div>
 
                               {/* FR7: Invite member */}

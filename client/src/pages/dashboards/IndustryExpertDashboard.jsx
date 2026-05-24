@@ -312,7 +312,14 @@ const IndustryExpertDashboard = () => {
                       <span className="badge">{project.category}</span>
                       <span className="score-chip">Innovation {project.innovationScore}</span>
                     </div>
-                    <h4>{project.title}</h4>
+                    <h4>
+                      {project.title}
+                      {project.sponsoredBy && (
+                        <span className="sponsored-badge" style={{ marginLeft: '8px', padding: '2px 8px', background: 'rgba(255, 193, 7, 0.15)', color: '#ffb300', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 600, display: 'inline-block', verticalAlign: 'middle' }}>
+                          Sponsor: {project.sponsoredBy}
+                        </span>
+                      )}
+                    </h4>
                     <p>{project.description}</p>
                     <div className="featured-meta">
                       <span>{project.student}</span>
@@ -334,7 +341,14 @@ const IndustryExpertDashboard = () => {
                 <div key={project.id} className="project-card">
                   <div className="project-head">
                     <div>
-                      <h4>{project.title}</h4>
+                      <h4>
+                        {project.title}
+                        {project.sponsoredBy && (
+                          <span className="sponsored-badge" style={{ marginLeft: '8px', padding: '2px 8px', background: 'rgba(255, 193, 7, 0.15)', color: '#ffb300', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 600, display: 'inline-block', verticalAlign: 'middle' }}>
+                            Sponsor: {project.sponsoredBy}
+                          </span>
+                        )}
+                      </h4>
                       <span>{project.student} • {project.roll}</span>
                     </div>
                     <span className={`status-chip ${project.status.toLowerCase().replace(' ', '-')}`}>
@@ -486,6 +500,12 @@ const IndustryExpertDashboard = () => {
                     <h4>Project Snapshot</h4>
                     <p>{selectedProject.description}</p>
                     <div className="info-grid">
+                      {selectedProject.sponsoredBy && (
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <span>Industry Sponsor</span>
+                          <strong style={{ color: '#ffb300', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>★ {selectedProject.sponsoredBy}</strong>
+                        </div>
+                      )}
                       <div>
                         <span>Student</span>
                         <strong>{selectedProject.student}</strong>

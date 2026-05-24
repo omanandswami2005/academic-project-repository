@@ -45,9 +45,11 @@ export function AuthProvider({ children }) {
             try {
                 // Validate token + get fresh profile data from server
                 const { data } = await userAPI.getProfile();
-                const freshUser = data.user;
-                setUser(freshUser);
-                localStorage.setItem('user', JSON.stringify(freshUser));
+                const freshUser = data?.user;
+                if (freshUser) {
+                    setUser(freshUser);
+                    localStorage.setItem('user', JSON.stringify(freshUser));
+                }
             } catch (err) {
                 if (err.response?.status === 401) {
                     // Token expired AND refresh failed (interceptor already tried)
@@ -64,10 +66,14 @@ export function AuthProvider({ children }) {
 
     const login = useCallback(async (email, password) => {
         const { data } = await authAPI.login({ email, password });
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        setUser(data.user);
+        if (data) {
+            if (data.accessToken) localStorage.setItem('accessToken', data.accessToken);
+            if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+            if (data.user) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                setUser(data.user);
+            }
+        }
         return data;
     }, []);
 
@@ -90,8 +96,10 @@ export function AuthProvider({ children }) {
     }, []);
 
     const updateUser = useCallback((updatedUser) => {
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        if (updatedUser) {
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
     }, []);
 
     const value = {

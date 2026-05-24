@@ -74,6 +74,8 @@ const StudentDashboard = () => {
   const [teachers, setTeachers] = useState([])
   const [selectedMentor, setSelectedMentor] = useState('')
   const [mentorRequesting, setMentorRequesting] = useState(false)
+  const [mentorSearch, setMentorSearch] = useState('')
+  const [showMentorDropdown, setShowMentorDropdown] = useState(false)
 
   // FR3/33: Fork / browse
   const [publicProjects, setPublicProjects] = useState([])
@@ -977,12 +979,55 @@ const StudentDashboard = () => {
                               {/* FR9: Mentor request — teacher dropdown */}
                               {(!project.mentorId || project.mentorStatus === 'none') && (
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
-                                  <select className="form-input" style={{ flex: 1, minWidth: '200px' }} value={selectedMentor} onChange={(e) => setSelectedMentor(e.target.value)}>
-                                    <option value="">Select a teacher as mentor…</option>
-                                    {teachers.map(t => (
-                                      <option key={t.id} value={t.id}>{t.username} — {t.email} ({t.branch || 'N/A'})</option>
-                                    ))}
-                                  </select>
+                                  <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                                    <input
+                                      type="text"
+                                      className="form-input"
+                                      placeholder="Search teacher as mentor..."
+                                      value={
+                                        selectedMentor 
+                                          ? (teachers.find(t => t.id === selectedMentor)?.username || mentorSearch)
+                                          : mentorSearch
+                                      }
+                                      onChange={(e) => {
+                                        setMentorSearch(e.target.value);
+                                        setSelectedMentor('');
+                                        setShowMentorDropdown(true);
+                                      }}
+                                      onFocus={() => setShowMentorDropdown(true)}
+                                      onBlur={() => setTimeout(() => setShowMentorDropdown(false), 200)}
+                                    />
+                                    {showMentorDropdown && (
+                                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '6px', maxHeight: '200px', overflowY: 'auto', zIndex: 100, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+                                        {teachers
+                                          .filter(t => 
+                                            !mentorSearch || 
+                                            t.username.toLowerCase().includes(mentorSearch.toLowerCase()) || 
+                                            t.email.toLowerCase().includes(mentorSearch.toLowerCase()) ||
+                                            (t.branch && t.branch.toLowerCase().includes(mentorSearch.toLowerCase()))
+                                          )
+                                          .map(t => (
+                                            <div key={t.id} style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '0.875rem', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
+                                              onMouseDown={() => {
+                                                setSelectedMentor(t.id);
+                                                setMentorSearch(t.username);
+                                                setShowMentorDropdown(false);
+                                              }}>
+                                              <span style={{ fontWeight: 500 }}>{t.username}</span> 
+                                              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: '6px' }}>({t.branch || 'N/A'}) · {t.email}</span>
+                                            </div>
+                                          ))}
+                                        {teachers.filter(t => 
+                                          !mentorSearch || 
+                                          t.username.toLowerCase().includes(mentorSearch.toLowerCase()) || 
+                                          t.email.toLowerCase().includes(mentorSearch.toLowerCase()) ||
+                                          (t.branch && t.branch.toLowerCase().includes(mentorSearch.toLowerCase()))
+                                        ).length === 0 && (
+                                          <div style={{ padding: '8px 12px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>No teachers found</div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                   <Button variant="outline" size="sm" icon={<BookOpen size={14} />} onClick={() => { if (selectedMentor) handleRequestMentor(project.id, parseInt(selectedMentor)) }} disabled={!selectedMentor || mentorRequesting} loading={mentorRequesting}>
                                     Request Mentor
                                   </Button>

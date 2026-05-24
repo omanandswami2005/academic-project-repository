@@ -44,7 +44,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: aprs-backend
-          property: host
+        value: https://aprs-backend.onrender.com

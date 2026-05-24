@@ -1,4 +1,4 @@
-const { eq, ilike, or } = require('drizzle-orm');
+const { eq, ilike, or, and, ne } = require('drizzle-orm');
 const { getDB } = require('../config/db');
 const { users } = require('../db/schema');
 const logger = require('../utils/logger');
@@ -45,7 +45,7 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const db = getDB();
-        const { username, mobile, bio, skills, year, prn } = req.body;
+        const { username, email, mobile, bio, skills, year, prn } = req.body;
 
 
         const updateData = { updatedAt: new Date() };
@@ -55,6 +55,17 @@ const updateProfile = async (req, res) => {
         if (skills !== undefined) updateData.skills = skills;
         if (year !== undefined) updateData.year = year;
         if (prn !== undefined) updateData.prn = prn;
+
+        if (email) {
+            const existing = await db.select({ id: users.id })
+                .from(users)
+                .where(and(eq(users.email, email), ne(users.id, req.user.id)))
+                .limit(1);
+            if (existing.length > 0) {
+                return res.status(400).json({ message: 'User with this email already exists.' });
+            }
+            updateData.email = email;
+        }
 
 
         const [updated] = await db.update(users)

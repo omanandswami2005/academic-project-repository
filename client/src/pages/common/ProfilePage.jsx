@@ -211,6 +211,7 @@ const ProfilePage = () => {
                   try {
                     const updatePayload = {
                       username: String(profile.name || ''),
+                      email: String(profile.email || ''),
                       mobile: String(profile.phone || ''),
                       bio: String(profile.bio ?? ''),
                     }

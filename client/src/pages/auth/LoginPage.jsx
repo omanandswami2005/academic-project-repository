@@ -63,14 +63,14 @@ const LoginPage = () => {
           <div className="form-group">
             <label htmlFor="email" className="form-label">
               <Mail size={15} />
-              Email
+              Email or PRN
             </label>
             <input
               type="text"
               id="email"
               name="email"
               className="form-input"
-              placeholder="you@example.com"
+              placeholder="you@example.com or RBT PRN (e.g., RBT22CB038)"
               value={formData.email}
               onChange={handleChange}
               required

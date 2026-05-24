@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { eq, and, gt } = require('drizzle-orm');
+const { eq, and, gt, or } = require('drizzle-orm');
 const { getDB } = require('../config/db');
 const { users, refreshTokens } = require('../db/schema');
 const { sendResetEmail } = require('../utils/email');
@@ -83,7 +83,12 @@ const login = async (req, res) => {
         const db = getDB();
         const { email, password } = req.body;
 
-        const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        const [user] = await db.select().from(users)
+            .where(or(
+                eq(users.email, email),
+                eq(users.prn, email)
+            ))
+            .limit(1);
         if (!user) {
             logger.warn('AUTH', `Login failed — user not found: ${email}`);
             return res.status(400).json({ message: 'Invalid email or password.' });

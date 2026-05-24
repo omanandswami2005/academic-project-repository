@@ -25,13 +25,22 @@ export function AuthProvider({ children }) {
             const accessToken = localStorage.getItem('accessToken');
             const storedUser = localStorage.getItem('user');
 
-            if (!accessToken || !storedUser) {
+            if (!accessToken || !storedUser || storedUser === 'undefined' || storedUser === 'null') {
+                localStorage.clear();
                 setLoading(false);
                 return;
             }
 
-            // Restore immediately so ProtectedRoutes don't flicker
-            setUser(JSON.parse(storedUser));
+            try {
+                // Restore immediately so ProtectedRoutes don't flicker
+                setUser(JSON.parse(storedUser));
+            } catch (e) {
+                console.error("Failed to parse stored user session:", e);
+                localStorage.clear();
+                setUser(null);
+                setLoading(false);
+                return;
+            }
 
             try {
                 // Validate token + get fresh profile data from server
